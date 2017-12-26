@@ -23,6 +23,7 @@ public class BetfairMonitor {
     }
 
     public void start(ActorRef worker) {
+        log.info("starting worker - {}", worker);
         worker.tell(new BetfairProtocol.Start(), ActorRef.noSender());
     }
 }

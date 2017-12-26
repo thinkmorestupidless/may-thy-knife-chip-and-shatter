@@ -2,6 +2,8 @@ package cc.xuloo.betfair.impl;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.event.Logging;
+import akka.event.LoggingAdapter;
 import cc.xuloo.betfair.aping.entities.EventResult;
 import cc.xuloo.betfair.aping.entities.MarketFilter;
 import cc.xuloo.betfair.client.BetfairClient;
@@ -10,6 +12,8 @@ import com.google.inject.Inject;
 import play.libs.akka.InjectedActorSupport;
 
 public class BetfairWorker extends AbstractActor implements InjectedActorSupport {
+
+    final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
     private final BetfairClient betfair;
 
@@ -23,10 +27,12 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
 
     @Override
     public Receive createReceive() {
-        return receiveBuilder().build();
+        return receiveBuilder().match(BetfairProtocol.Start.class, this::start).build();
     }
 
     private void start(BetfairProtocol.Start cmd) {
+        log.info("starting betfair worker");
+
         MarketFilter filter = MarketFilter.builder()
                                           .eventTypeIds(Sets.newHashSet("1"))
                                           .marketCountries(Sets.newHashSet("GB"))

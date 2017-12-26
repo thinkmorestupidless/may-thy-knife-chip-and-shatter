@@ -8,12 +8,18 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.lightbend.lagom.javadsl.server.ServiceGuiceSupport;
 import com.typesafe.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import play.libs.akka.AkkaGuiceSupport;
 
 public class BetfairModule extends AbstractModule implements ServiceGuiceSupport, AkkaGuiceSupport {
 
+    private final static Logger log = LoggerFactory.getLogger(BetfairModule.class);
+
     @Override
     protected void configure() {
+        log.info("configuring betfair module");
+
         bindService(BetfairService.class, BetfairServiceImpl.class);
 
         bind(BetfairMonitor.class).asEagerSingleton();
