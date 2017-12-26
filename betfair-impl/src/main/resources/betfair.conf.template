@@ -1,0 +1,8 @@
+betfair {
+  username = "<required>"
+  password = "<required>"
+  applicationKey = "<required>"
+  keyFile = "<required>"
+  keyPassword = "<required>"
+  certFile = "<required>"
+}
