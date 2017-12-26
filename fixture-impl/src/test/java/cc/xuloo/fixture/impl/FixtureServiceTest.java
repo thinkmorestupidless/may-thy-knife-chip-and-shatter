@@ -3,12 +3,9 @@
  */
 package cc.xuloo.fixture.impl;
 
-import cc.xuloo.fixture.api.Passenger;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
 import cc.xuloo.fixture.api.Fixture;
 import cc.xuloo.fixture.api.FixtureService;
-import cc.xuloo.fixture.api.FlightSummary;
-import cc.xuloo.fixture.api.SelectSeat;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 

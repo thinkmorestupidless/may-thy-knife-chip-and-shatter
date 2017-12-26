@@ -4,7 +4,6 @@ import com.lightbend.lagom.internal.javadsl.api.broker.TopicFactory;
 import com.lightbend.lagom.javadsl.persistence.Offset;
 import com.lightbend.lagom.javadsl.persistence.ReadSide;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
-import cc.xuloo.fixture.api.FlightSummary;
 import less.stupid.utils.DoNothingTopicFactory;
 import less.stupid.utils.ReadSideTestDriver;
 import org.junit.AfterClass;

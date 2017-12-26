@@ -11,7 +11,7 @@ import java.util.Date;
 @JsonDeserialize
 public class Fixture {
 
-    public final String id;
+    public final String fixtureId;
 
     public final String name;
 
@@ -24,12 +24,12 @@ public class Fixture {
     public final Date openDate;
 
     @JsonCreator
-    public Fixture(String id, String name, String countryCode, String timezone, String venue, Date openDate) {
-        this.id             = Preconditions.checkNotNull(id, "callsign");
-        this.name           = Preconditions.checkNotNull(name, "callsign");
-        this.countryCode    = Preconditions.checkNotNull(countryCode, "equipment");
-        this.timezone       = Preconditions.checkNotNull(timezone, "departureIata");
-        this.venue          = Preconditions.checkNotNull(venue, "arrivalIata");
-        this.openDate       = Preconditions.checkNotNull(openDate, "arrivalIata");
+    public Fixture(String fixtureId, String name, String countryCode, String timezone, String venue, Date openDate) {
+        this.fixtureId      = Preconditions.checkNotNull(fixtureId, "fixtureId");
+        this.name           = Preconditions.checkNotNull(name, "name");
+        this.countryCode    = Preconditions.checkNotNull(countryCode, "countryCode");
+        this.timezone       = Preconditions.checkNotNull(timezone, "timezone");
+        this.venue          = Preconditions.checkNotNull(venue, "venue");
+        this.openDate       = Preconditions.checkNotNull(openDate, "openDate");
     }
 }

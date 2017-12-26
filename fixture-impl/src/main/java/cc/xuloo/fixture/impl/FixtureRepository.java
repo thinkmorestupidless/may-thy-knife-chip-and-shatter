@@ -75,9 +75,13 @@ public class FixtureRepository {
         private CompletionStage<Done> createTable() {
             return session.executeCreateTable(
                     "CREATE TABLE IF NOT EXISTS fixtures (" +
-                            "flightId UUID," +
-                            "callSign text," +
-                            "PRIMARY KEY (flightId)" +
+                            "fixtureId text," +
+                            "name text," +
+                            "countryCode text," +
+                            "timezone text," +
+                            "venue text," +
+                            "openDate timestamp," +
+                            "PRIMARY KEY (fixtureId)" +
                           ")"
             );
         }
@@ -88,15 +92,19 @@ public class FixtureRepository {
 
                         session.prepare(
                             "INSERT INTO fixtures(" +
-                             "flightId," +
-                             "callSign" +
-                            ") VALUES (?, ?)"
+                             "fixtureId," +
+                             "name," +
+                             "countryCode," +
+                             "timezone," +
+                             "venue," +
+                             "openDate" +
+                            ") VALUES (?, ?, ?, ?, ?, ?)"
                         )
                         .thenAccept(statement -> insertFlightStatement = statement),
 
                         session.prepare(
                                 "DELETE FROM fixtures" +
-                                " WHERE flightId = ?"
+                                " WHERE fixtureId = ?"
                         )
                         .thenAccept(statement -> deleteFlightStatement = statement)
                     );

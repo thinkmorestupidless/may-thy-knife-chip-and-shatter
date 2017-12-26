@@ -6,11 +6,13 @@ package cc.xuloo.fixture.impl;
 import akka.Done;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Preconditions;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntity;
 import com.lightbend.lagom.serialization.CompressedJsonable;
 import com.lightbend.lagom.serialization.Jsonable;
 import lombok.Value;
 
+import java.util.Date;
 import java.util.Optional;
 
 /**
@@ -26,20 +28,26 @@ public interface FixtureCommand extends Jsonable {
   @JsonDeserialize
   final class AddFixture implements FixtureCommand, CompressedJsonable, PersistentEntity.ReplyType<String> {
 
-    public final String callsign;
+    private final String fixtureId;
 
-    public final String equipment;
+    private final String name;
 
-    public final String departureIata;
+    private final String countryCode;
 
-    public final String arrivalIata;
+    private final String timezone;
+
+    private final String venue;
+
+    private final Date openDate;
 
     @JsonCreator
-    public AddFixture(String callsign, String equipment, String departureIata, String arrivalIata) {
-      this.callsign = callsign;
-      this.equipment = equipment;
-      this.departureIata = departureIata;
-      this.arrivalIata = arrivalIata;
+    public AddFixture(String fixtureId, String name, String countryCode, String timezone, String venue, Date openDate) {
+      this.fixtureId      = Preconditions.checkNotNull(fixtureId, "fixtureId");
+      this.name           = Preconditions.checkNotNull(name, "name");
+      this.countryCode    = Preconditions.checkNotNull(countryCode, "countryCode");
+      this.timezone       = Preconditions.checkNotNull(timezone, "timezone");
+      this.venue          = Preconditions.checkNotNull(venue, "venue");
+      this.openDate       = Preconditions.checkNotNull(openDate, "openDate");
     }
   }
 

@@ -5,13 +5,11 @@ package cc.xuloo.fixture.impl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Preconditions;
 import com.lightbend.lagom.serialization.CompressedJsonable;
 import lombok.Value;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -22,39 +20,29 @@ import java.util.stream.Collectors;
 @JsonDeserialize
 public final class FixtureState implements CompressedJsonable {
 
-  public final Optional<FlightInfo> flightInfo;
+  private final String fixtureId;
 
-  public final Set<Passenger> passengers;
+  private final String name;
 
-  @JsonCreator
-  public FixtureState(Optional<FlightInfo> flightInfo, Set<Passenger> passengers) {
-    this.flightInfo = flightInfo;
-    this.passengers = passengers;
-  }
+  private final String countryCode;
+
+  private final String timezone;
+
+  private final String venue;
+
+  private final Date openDate;
 
   public static FixtureState empty() {
-    return new FixtureState(Optional.empty(), Collections.emptySet());
+      return new FixtureState("", "", "", "", "", new Date(0));
   }
 
-  public FixtureState withPassenger(Passenger passenger) {
-    Set<Passenger> copy = new HashSet<>(passengers);
-    copy.add(passenger);
-
-    return new FixtureState(flightInfo, copy);
-  }
-
-  public FixtureState updatePassenger(Passenger passenger) {
-    Set<Passenger> updated = passengers.stream().filter(p -> !p.passengerId.equals(passenger.passengerId)).collect(Collectors.toSet());
-    updated.add(passenger);
-
-    return new FixtureState(flightInfo, updated);
-  }
-
-  public FixtureState withoutPassenger(String passengerId) {
-    return new FixtureState(flightInfo, passengers.stream().filter(p -> !p.passengerId.equals(passengerId)).collect(Collectors.toSet()));
-  }
-
-  public FixtureState withDoorsClosed(Boolean doorsClosed) {
-    return new FixtureState(Optional.of(flightInfo.get().withDoorsClosed(doorsClosed)), passengers);
+  @JsonCreator
+  public FixtureState(String fixtureId, String name, String countryCode, String timezone, String venue, Date openDate) {
+    this.fixtureId      = Preconditions.checkNotNull(fixtureId, "fixtureId");
+    this.name           = Preconditions.checkNotNull(name, "name");
+    this.countryCode    = Preconditions.checkNotNull(countryCode, "countryCode");
+    this.timezone       = Preconditions.checkNotNull(timezone, "timezone");
+    this.venue          = Preconditions.checkNotNull(venue, "venue");
+    this.openDate       = Preconditions.checkNotNull(openDate, "openDate");
   }
 }

@@ -31,7 +31,7 @@ public interface FixtureService extends Service {
   @Override
   default Descriptor descriptor() {
     // @formatter:off
-    return named("flights").withCalls(
+    return named("fixtures").withCalls(
         restCall(Method.GET, "/fixtures", this::listFixtures)
       ).withAutoAcl(true);
     // @formatter:on

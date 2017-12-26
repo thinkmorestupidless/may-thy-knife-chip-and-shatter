@@ -9,7 +9,6 @@ import cc.xuloo.fixture.api.FixtureService;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRef;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
-import less.stupid.flights.api.*;
 
 import javax.inject.Inject;
 import java.util.Set;
