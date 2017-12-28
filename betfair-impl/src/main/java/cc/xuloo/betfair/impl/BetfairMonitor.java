@@ -24,12 +24,10 @@ public class BetfairMonitor {
 
         ActorRef socketListener = system.actorOf(SocketListeningActor.props(), "socket-listener");
 
-        InetSocketAddress address = InetSocketAddress.createUnresolved(config.getString("betfair.stream.uri"), 80);
+        InetSocketAddress address = InetSocketAddress.createUnresolved(config.getString("betfair.stream.uri"), config.getInt("betfair.stream.port"));
         ActorRef socket = system.actorOf(SocketActor.props(address, socketListener), "socket-actor");
 
-        ActorRef wrapper = system.actorOf(SocketWrapper.props(socket), "socket-wrapper");
-
-        ActorRef betfairSocket = system.actorOf(BetfairSocketActor.props(wrapper, mapper), "betfair-socket");
+        ActorRef betfairSocket = system.actorOf(BetfairSocketActor.props(socket, mapper), "betfair-socket");
 
         BetfairConnection connection = new AsyncHttpBetfairConnection(config);
         ExchangeApi exchange = new ExchangeApi(connection);

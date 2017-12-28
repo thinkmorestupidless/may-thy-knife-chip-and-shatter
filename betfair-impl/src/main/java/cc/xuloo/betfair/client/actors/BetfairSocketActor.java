@@ -2,14 +2,20 @@ package cc.xuloo.betfair.client.actors;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.Cancellable;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.stream.javadsl.SourceQueue;
 import akka.util.ByteString;
+import cc.xuloo.betfair.stream.AuthenticationMessage;
+import cc.xuloo.betfair.stream.HeartbeatMessage;
 import cc.xuloo.betfair.stream.RequestMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opengamma.strata.collect.Unchecked;
+import scala.concurrent.duration.FiniteDuration;
+
+import java.util.concurrent.TimeUnit;
 
 public class BetfairSocketActor extends AbstractActor {
 
@@ -27,6 +33,8 @@ public class BetfairSocketActor extends AbstractActor {
 
     private SourceQueue<RequestMessage> stream;
 
+    private Cancellable timer;
+
     public BetfairSocketActor(ActorRef socket, ObjectMapper mapper) {
         this.socket = socket;
         this.mapper = mapper;
@@ -43,18 +51,32 @@ public class BetfairSocketActor extends AbstractActor {
 //        stream = source.via(flow).to(sink).run(mat);
     }
 
+    @Override
+    public void postStop() throws Exception {
+        if (timer != null) {
+            timer.cancel();
+        }
+    }
 
     @Override
     public Receive createReceive() {
         return receiveBuilder()
 //                .match(RequestMessage.class, msg -> socket.tell(msg, getSelf())/*stream.offer(msg)*/)
-                .match(StreamProtocol.class, msg -> {
-                    String s = Unchecked.wrap(() -> mapper.writeValueAsString(msg)) + CRLF;
-                    ByteString bs = ByteString.fromString(s);
-                    log.info("sending message {}", bs);
-                    socket.tell(bs, getSelf());
+                .match(AuthenticationMessage.class, msg -> {
+                    log.info("connecting");
+                    FiniteDuration duration = FiniteDuration.create(1, TimeUnit.SECONDS);
+                    timer = getContext().getSystem().scheduler().schedule(duration, duration, getSelf(), HeartbeatMessage.builder().id(0).build(), getContext().getSystem().dispatcher(), getSelf());
+                    toSocket(msg);
                 })
+                .match(StreamProtocol.class, this::toSocket)
                 .matchAny(o -> log.info("i don't know what to do with {}", o))
                 .build();
+    }
+
+    public void toSocket(StreamProtocol msg) {
+        log.info("sending message {}", msg);
+        ByteString bs = Unchecked.wrap(() -> ByteString.fromString(mapper.writeValueAsString(msg) + CRLF));
+
+        socket.tell(bs, getSelf());
     }
 }
