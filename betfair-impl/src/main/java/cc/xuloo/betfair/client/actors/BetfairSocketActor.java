@@ -1,22 +1,13 @@
-package cc.xuloo.betfair.client;
+package cc.xuloo.betfair.client.actors;
 
-import akka.NotUsed;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
-import akka.stream.OverflowStrategy;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.Source;
 import akka.stream.javadsl.SourceQueue;
-import akka.stream.javadsl.SourceQueueWithComplete;
-import akka.stream.scaladsl.Sink;
 import cc.xuloo.betfair.stream.RequestMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.opengamma.strata.collect.Unchecked;
 
 public class BetfairSocketActor extends AbstractActor {
 
@@ -39,15 +30,13 @@ public class BetfairSocketActor extends AbstractActor {
 
     @Override
     public void preStart() throws Exception {
-        Materializer mat = ActorMaterializer.create(getContext());
-        Source<RequestMessage, SourceQueueWithComplete<RequestMessage>> source = Source.queue(1000, OverflowStrategy.backpressure());
-        Flow<RequestMessage, String, NotUsed> flow = Flow.of(RequestMessage.class).map(msg -> Unchecked.wrap(() -> mapper.writeValueAsString(msg)));
-        Sink<String, NotUsed> sink = Sink.actorRefWithAck(socket, SocketWrapper.Init.class, SocketWrapper.Ack.class, SocketWrapper.Complete.class, t -> {
-            log.warning("message failed with {}", t);
-            return null;
-        });
 
-        stream = source.via(flow).to(sink).run(mat);
+//        Materializer mat = ActorMaterializer.create(getContext());
+//        Source<RequestMessage, SourceQueueWithComplete<RequestMessage>> source = Source.queue(1000, OverflowStrategy.backpressure());
+//        Flow<RequestMessage, ByteString, NotUsed> flow = Flow.of(RequestMessage.class).map(msg -> Unchecked.wrap(() -> ByteString.fromString(mapper.writeValueAsString(msg))));
+//        Sink<ByteString, NotUsed> sink = Sink.actorRefWithAck(socket, SocketWrapper.Init.class, SocketWrapper.Ack.class, SocketWrapper.Complete.class, t -> t);
+//
+//        stream = source.via(flow).to(sink).run(mat);
     }
 
 

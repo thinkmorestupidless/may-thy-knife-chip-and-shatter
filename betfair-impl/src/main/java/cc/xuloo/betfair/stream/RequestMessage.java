@@ -40,7 +40,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = AuthenticationMessage.class, name = "authentication"),
         @JsonSubTypes.Type(value = MarketSubscriptionMessage.class, name = "marketSubscription")
 })
-public interface RequestMessage {
+public interface RequestMessage extends StreamMessage {
 
     String getOp();
 

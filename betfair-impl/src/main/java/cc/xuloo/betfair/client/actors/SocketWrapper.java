@@ -1,4 +1,4 @@
-package cc.xuloo.betfair.client;
+package cc.xuloo.betfair.client.actors;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;

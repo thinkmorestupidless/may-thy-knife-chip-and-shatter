@@ -39,7 +39,7 @@ public class ExchangeApi implements ExchangeConstants, ExchangeOperations {
                     log.error("error logging in -> {}", t);
                     return null;
                 })
-                .thenApply(resp -> wrap(() -> mapper.readValue(resp, LoginResponse.class)));
+                .thenApply(resp -> objectify(resp, LoginResponse.class));
     }
 
     public CompletionStage<EventTypeResultContainer> listEventTypes(MarketFilter filter) {

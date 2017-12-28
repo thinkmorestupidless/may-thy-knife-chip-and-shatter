@@ -92,6 +92,7 @@ lazy val `betfair-impl` = (project in file("betfair-impl"))
       joda,
       jacksonJoda,
       asynchttpclient,
+      scalajava8compat,
       assertJ
     )
   )
@@ -130,6 +131,7 @@ val strata = "com.opengamma.strata" % "strata-collect" % "1.4.2"
 val joda = "joda-time" % "joda-time" % "2.9.3"
 val jacksonJoda = "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.9.2"
 val asynchttpclient = "org.asynchttpclient" % "async-http-client" % "2.0.37"
+val scalajava8compat = "org.scala-lang.modules" %% "scala-java8-compat" % "0.5.0"
 
 def common = Seq(
   javacOptions in compile += "-parameters"
