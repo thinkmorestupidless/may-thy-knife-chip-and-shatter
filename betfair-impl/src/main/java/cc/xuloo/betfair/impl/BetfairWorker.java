@@ -9,6 +9,7 @@ import cc.xuloo.betfair.aping.entities.MarketFilter;
 import cc.xuloo.betfair.client.BetfairClient;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import org.assertj.core.util.Lists;
 import play.libs.akka.InjectedActorSupport;
 
 public class BetfairWorker extends AbstractActor implements InjectedActorSupport {
@@ -39,7 +40,13 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
                                           .build();
 
         betfair.listEvents(filter)
+                .exceptionally(t -> {
+                    log.error("problem listing events -> {}", t);
+                    return Lists.emptyList();
+                })
                 .thenAccept(result -> {
+                    log.info("result -> {}", result);
+
                     if (result.size() > 0) {
                         EventResult first = result.get(0);
 

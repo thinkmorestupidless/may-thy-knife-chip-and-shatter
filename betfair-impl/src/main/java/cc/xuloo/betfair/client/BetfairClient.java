@@ -62,7 +62,6 @@ public class BetfairClient implements SessionProvider {
     }
 
     public CompletionStage<ResponseMessage> subscribeToMarket(cc.xuloo.betfair.stream.MarketFilter marketFilter, MarketDataFilter marketDataFilter) {
-        log.info("subscribing to market {}", marketFilter);
         return stream.subscribe(marketFilter, marketDataFilter);
     }
 }

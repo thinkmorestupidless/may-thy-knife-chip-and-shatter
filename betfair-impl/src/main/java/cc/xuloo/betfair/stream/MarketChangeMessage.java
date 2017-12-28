@@ -43,9 +43,7 @@ public class MarketChangeMessage implements ResponseMessage  {
   public enum CtEnum {
 
     SUB_IMAGE("SUB_IMAGE"),
-
     RESUB_DELTA("RESUB_DELTA"),
-
     HEARTBEAT("HEARTBEAT");
 
     private String value;
@@ -66,9 +64,7 @@ public class MarketChangeMessage implements ResponseMessage  {
   public enum SegmentTypeEnum {
 
     SEG_START("SEG_START"),
-
     SEG("SEG"),
-
     SEG_END("SEG_END");
 
     private String value;

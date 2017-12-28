@@ -86,6 +86,7 @@ lazy val `betfair-impl` = (project in file("betfair-impl"))
       lagomJavadslPersistenceCassandra,
       lagomJavadslKafkaBroker,
       lagomJavadslTestKit,
+      lagomJavadslPubSub,
       lombok,
       strata,
       joda,

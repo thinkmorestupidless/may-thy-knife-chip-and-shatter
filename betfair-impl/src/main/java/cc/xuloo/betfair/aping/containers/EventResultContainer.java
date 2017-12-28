@@ -2,19 +2,25 @@ package cc.xuloo.betfair.aping.containers;
 
 import cc.xuloo.betfair.aping.entities.EventResult;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+@JsonIgnoreProperties
 public class EventResultContainer extends Container {
+
+    private final String jsonrpc;
 
 	private final String id;
 
 	private final List<EventResult> result;
 
 	@JsonCreator
-    public EventResultContainer(@JsonProperty("id") String id,
+    public EventResultContainer(@JsonProperty("jsonrpc") String jsonrpc,
+                                @JsonProperty("id") String id,
                                 @JsonProperty("result") List<EventResult> result) {
+	    this.jsonrpc = jsonrpc;
         this.id = id;
         this.result = result;
     }
