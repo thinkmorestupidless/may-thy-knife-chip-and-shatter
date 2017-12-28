@@ -38,12 +38,6 @@ import lombok.Value;
 public class AuthenticationMessage implements RequestMessage  {
 
     /**
-     * The operation type
-     * @return op
-     **/
-    private final String op;
-
-    /**
      * Client generated unique id to link request with response (like json rpc)
      * @return id
      **/
@@ -53,11 +47,9 @@ public class AuthenticationMessage implements RequestMessage  {
 
     private final String appKey;
 
-    public AuthenticationMessage(@JsonProperty("op") String op,
-                                 @JsonProperty("id") Integer id,
+    public AuthenticationMessage(@JsonProperty("id") Integer id,
                                  @JsonProperty("session") String session,
                                  @JsonProperty("appKey") String appKey) {
-        this.op = op;
         this.id = id;
         this.session = session;
         this.appKey = appKey;

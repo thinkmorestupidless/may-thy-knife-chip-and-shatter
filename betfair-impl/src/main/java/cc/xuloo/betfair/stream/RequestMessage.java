@@ -25,6 +25,7 @@
 
 package cc.xuloo.betfair.stream;
 
+import cc.xuloo.betfair.client.actors.StreamProtocol;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
@@ -40,9 +41,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = AuthenticationMessage.class, name = "authentication"),
         @JsonSubTypes.Type(value = MarketSubscriptionMessage.class, name = "marketSubscription")
 })
-public interface RequestMessage extends StreamMessage {
-
-    String getOp();
+public interface RequestMessage extends StreamProtocol {
 
     Integer getId();
 }

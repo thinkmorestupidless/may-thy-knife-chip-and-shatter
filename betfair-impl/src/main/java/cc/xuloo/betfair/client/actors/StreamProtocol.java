@@ -1,15 +1,24 @@
 package cc.xuloo.betfair.client.actors;
 
+import cc.xuloo.betfair.client.BetfairSession;
+import lombok.Builder;
 import lombok.Value;
 
 public interface StreamProtocol {
 
-    class Connect {}
-
-    class Authenticate {}
+    @Value
+    class Connect implements StreamProtocol {}
 
     @Value
-    class MarketSubscription {
+    @Builder
+    class Authenticate implements StreamProtocol {
+
+        private final BetfairSession session;
+    }
+
+    @Value
+    @Builder
+    class MarketSubscription implements StreamProtocol {
 
         private final String marketId;
     }

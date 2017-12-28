@@ -2,8 +2,10 @@ package cc.xuloo.betfair.impl;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import cc.xuloo.betfair.client.BetfairConnection;
 import cc.xuloo.betfair.client.ExchangeApi;
 import cc.xuloo.betfair.client.actors.*;
+import cc.xuloo.betfair.client.asynchttp.AsyncHttpBetfairConnection;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.typesafe.config.Config;
@@ -29,9 +31,10 @@ public class BetfairMonitor {
 
         ActorRef betfairSocket = system.actorOf(BetfairSocketActor.props(wrapper, mapper), "betfair-socket");
 
-        ExchangeApi exchange = null;
+        BetfairConnection connection = new AsyncHttpBetfairConnection(config);
+        ExchangeApi exchange = new ExchangeApi(connection);
 
-        ActorRef betfairStream = system.actorOf(BetfairStreamActor.props(), "betfair-stream");
+        ActorRef betfairStream = system.actorOf(BetfairStreamActor.props(betfairSocket), "betfair-stream");
         ActorRef betfairExchange = system.actorOf(BetfairExchangeActor.props(exchange), "betfair-exchange");
 
         ActorRef betfairClient = system.actorOf(BetfairClientActor.props(config, betfairExchange, betfairStream), "betfair-client");

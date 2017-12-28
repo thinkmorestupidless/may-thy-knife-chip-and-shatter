@@ -32,7 +32,7 @@ public class BetfairClient implements SessionProvider {
 
     public BetfairClient(BetfairConnection connection) {
         sessionProvider = new DefaultSessionProvider(this);
-        exchange = new ExchangeApi(sessionProvider, connection);
+        exchange = new ExchangeApi(connection);
         stream = new BetfairStream(sessionProvider, conf);
     }
 
@@ -50,15 +50,15 @@ public class BetfairClient implements SessionProvider {
     }
 
     public CompletionStage<List<EventTypeResult>> listEventTypes(MarketFilter filter) {
-        return exchange.listEventTypes(filter).thenApply(response -> response.getResult());
+        return exchange.listEventTypes(null, filter).thenApply(response -> response.getResult());
     }
 
     public CompletionStage<List<EventResult>> listEvents(MarketFilter filter) {
-        return exchange.listEvents(filter).thenApply(response -> response.getResult());
+        return exchange.listEvents(null, filter).thenApply(response -> response.getResult());
     }
 
     public CompletionStage<List<MarketCatalogue>> listMarketCatalogue(MarketFilter filter, Set<MarketProjection> marketProjection, MarketSort sort, int maxResults) {
-        return exchange.listMarketCatalogue(filter, marketProjection, sort, maxResults).thenApply(response -> response.getResult());
+        return exchange.listMarketCatalogue(null, filter, marketProjection, sort, maxResults).thenApply(response -> response.getResult());
     }
 
     public CompletionStage<ResponseMessage> subscribeToMarket(cc.xuloo.betfair.stream.MarketFilter marketFilter, MarketDataFilter marketDataFilter) {
