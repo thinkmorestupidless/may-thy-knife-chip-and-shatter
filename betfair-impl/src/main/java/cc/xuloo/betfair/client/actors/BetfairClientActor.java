@@ -5,22 +5,25 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.util.ByteString;
 import cc.xuloo.betfair.client.BetfairSession;
 import cc.xuloo.betfair.client.LoginResponse;
-import cc.xuloo.betfair.stream.AuthenticationMessage;
-import cc.xuloo.betfair.stream.StatusMessage;
-import cc.xuloo.betfair.stream.StreamMessage;
+import cc.xuloo.betfair.stream.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opengamma.strata.collect.Unchecked;
 import com.typesafe.config.Config;
 
 public class BetfairClientActor extends AbstractActorWithStash {
 
-    public static Props props(Config config, ActorRef exchange, ActorRef stream) {
-        return Props.create(BetfairClientActor.class, () -> new BetfairClientActor(config, exchange, stream));
+    public static Props props(Config config, ObjectMapper mapper, ActorRef exchange, ActorRef stream) {
+        return Props.create(BetfairClientActor.class, config, mapper, exchange, stream);
     }
 
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
     private final Config config;
+
+    private final ObjectMapper mapper;
 
     private final ActorRef exchange;
 
@@ -29,7 +32,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
     private final Receive loggedOut = receiveBuilder()
                                         .match(ExchangeProtocol.Login.class, this::handleLogin)
                                         .match(LoginResponse.class, this::handleLoginResponse)
-                                        .match(StatusMessage.class, this::handleStatusMessage)
+                                        .match(ByteString.class, this::handleByteString)
                                         .match(ExchangeProtocol.class, x -> stash())
                                         .matchAny(o -> log.info("i don't know what to do with {}", o))
                                         .build();
@@ -37,12 +40,15 @@ public class BetfairClientActor extends AbstractActorWithStash {
     private final Receive loggedIn = receiveBuilder()
                                         .match(ExchangeProtocol.class, this::handleExchangeMessage)
                                         .match(StreamMessage.class, this::handleStreamMessage)
+                                        .match(ByteString.class, this::handleByteString)
+                                        .matchAny(o -> log.info("i'm logged in and i don't know what to do with {}", o))
                                         .build();
 
     private BetfairSession session = BetfairSession.loggedOut();
 
-    public BetfairClientActor(Config config, ActorRef exchange, ActorRef stream) {
+    public BetfairClientActor(Config config, ObjectMapper mapper, ActorRef exchange, ActorRef stream) {
         this.config = config;
+        this.mapper = mapper;
         this.exchange = exchange;
         this.stream = stream;
     }
@@ -78,24 +84,37 @@ public class BetfairClientActor extends AbstractActorWithStash {
 
             session = BetfairSession.loggedIn(msg.getSessionToken(), config.getString("betfair.applicationKey"));
 
-            stream.tell(AuthenticationMessage.builder()
+            stream.tell(ConnectMessage.builder()
+                    .host(config.getString("betfair.stream.uri"))
+                    .port(config.getInt("betfair.stream.port"))
                     .id(0)
-                    .appKey(session.applicationKey())
-                    .session(session.sessionToken())
                     .build(), getSelf());
         } else {
             log.warning("failed to login successfully");
         }
     }
 
-    public void handleStatusMessage(StatusMessage msg) {
-        log.info("Handling status message {}", msg.getId());
+    public void handleByteString(ByteString bytes) {
+        ResponseMessage msg = Unchecked.wrap(() -> mapper.readValue(bytes.utf8String(), ResponseMessage.class));
 
-        if (msg.getId().equals(0)) {
-            log.info("stream succesfully authenticated");
+        if (msg instanceof ConnectionMessage) {
+            log.info("handling connection message");
 
-            unstashAll();
-            getContext().become(loggedIn);
+            stream.tell(AuthenticationMessage.builder()
+                    .id(1)
+                    .appKey(session.applicationKey())
+                    .session(session.sessionToken())
+                    .build(), getSelf());
+
+        } else if (msg instanceof StatusMessage) {
+            log.info("Handling status message {}", msg.getId());
+
+            if (msg.getId().equals(1)) {
+                log.info("stream succesfully authenticated");
+
+                unstashAll();
+                getContext().become(loggedIn);
+            }
         }
     }
 

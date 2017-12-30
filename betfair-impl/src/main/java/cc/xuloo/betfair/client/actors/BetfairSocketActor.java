@@ -8,10 +8,7 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.stream.javadsl.SourceQueue;
 import akka.util.ByteString;
-import cc.xuloo.betfair.stream.AuthenticationMessage;
-import cc.xuloo.betfair.stream.HeartbeatMessage;
-import cc.xuloo.betfair.stream.RequestMessage;
-import cc.xuloo.betfair.stream.StreamProtocol;
+import cc.xuloo.betfair.stream.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -63,6 +60,9 @@ public class BetfairSocketActor extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
+                .match(ConnectMessage.class, msg -> {
+                    socket.forward(msg, getContext());
+                })
                 .match(AuthenticationMessage.class, msg -> {
                     timer = getContext()
                                 .getSystem()
@@ -70,7 +70,7 @@ public class BetfairSocketActor extends AbstractActor {
                                 .schedule(FiniteDuration.create(1, TimeUnit.SECONDS),
                                           FiniteDuration.create(10, TimeUnit.SECONDS),
                                           getSelf(),
-                                          HeartbeatMessage.builder().id(1).build(),
+                                          HeartbeatMessage.builder().id(2).build(),
                                           getContext().getSystem().dispatcher(),
                                           getSelf());
                     toSocket(msg);

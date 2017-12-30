@@ -45,7 +45,7 @@ public class BetfairModule extends AbstractModule implements ServiceGuiceSupport
         ActorRef socketListener = system.actorOf(SocketListeningActor.props(), "socket-listener");
 
         InetSocketAddress address = InetSocketAddress.createUnresolved(config.getString("betfair.stream.uri"), config.getInt("betfair.stream.port"));
-        ActorRef socket = system.actorOf(SocketActor.props(address, socketListener), "socket-actor");
+        ActorRef socket = system.actorOf(SocketActor.props(), "socket-actor");
 
         ActorRef betfairSocket = system.actorOf(BetfairSocketActor.props(socket, mapper), "betfair-socket");
 
@@ -55,6 +55,6 @@ public class BetfairModule extends AbstractModule implements ServiceGuiceSupport
         ActorRef betfairStream = system.actorOf(BetfairStreamActor.props(betfairSocket), "betfair-stream");
         ActorRef betfairExchange = system.actorOf(BetfairExchangeActor.props(exchange), "betfair-exchange");
 
-        return system.actorOf(BetfairClientActor.props(config, betfairExchange, betfairStream), "betfair-client");
+        return system.actorOf(BetfairClientActor.props(config, mapper, betfairExchange, betfairStream), "betfair-client");
     }
 }
