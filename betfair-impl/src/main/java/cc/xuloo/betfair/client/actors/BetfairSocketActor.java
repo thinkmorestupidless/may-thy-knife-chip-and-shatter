@@ -11,11 +11,13 @@ import akka.util.ByteString;
 import cc.xuloo.betfair.stream.AuthenticationMessage;
 import cc.xuloo.betfair.stream.HeartbeatMessage;
 import cc.xuloo.betfair.stream.RequestMessage;
+import cc.xuloo.betfair.stream.StreamProtocol;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.opengamma.strata.collect.Unchecked;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.concurrent.TimeUnit;
+
+import static com.opengamma.strata.collect.Unchecked.wrap;
 
 public class BetfairSocketActor extends AbstractActor {
 
@@ -61,11 +63,16 @@ public class BetfairSocketActor extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-//                .match(RequestMessage.class, msg -> socket.tell(msg, getSelf())/*stream.offer(msg)*/)
                 .match(AuthenticationMessage.class, msg -> {
-                    log.info("connecting");
-                    FiniteDuration duration = FiniteDuration.create(1, TimeUnit.SECONDS);
-                    timer = getContext().getSystem().scheduler().schedule(duration, duration, getSelf(), HeartbeatMessage.builder().id(0).build(), getContext().getSystem().dispatcher(), getSelf());
+                    timer = getContext()
+                                .getSystem()
+                                .scheduler()
+                                .schedule(FiniteDuration.create(1, TimeUnit.SECONDS),
+                                          FiniteDuration.create(10, TimeUnit.SECONDS),
+                                          getSelf(),
+                                          HeartbeatMessage.builder().id(1).build(),
+                                          getContext().getSystem().dispatcher(),
+                                          getSelf());
                     toSocket(msg);
                 })
                 .match(StreamProtocol.class, this::toSocket)
@@ -75,8 +82,8 @@ public class BetfairSocketActor extends AbstractActor {
 
     public void toSocket(StreamProtocol msg) {
         log.info("sending message {}", msg);
-        ByteString bs = Unchecked.wrap(() -> ByteString.fromString(mapper.writeValueAsString(msg) + CRLF));
 
+        ByteString bs = wrap(() -> ByteString.fromString(mapper.writeValueAsString(msg) + CRLF));
         socket.tell(bs, getSelf());
     }
 }

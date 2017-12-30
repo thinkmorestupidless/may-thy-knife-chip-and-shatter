@@ -35,13 +35,11 @@ public class SocketActor extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(Tcp.CommandFailed.class, msg -> {
-                    log.info("failed");
                     listener.tell("failed", getSelf());
                     getContext().stop(getSelf());
 
                 })
                 .match(Tcp.Connected.class, msg -> {
-                    log.info("connected");
                     listener.tell(msg, getSelf());
                     getSender().tell(TcpMessage.register(getSelf()), getSelf());
                     getContext().become(connected(getSender()));
@@ -52,14 +50,12 @@ public class SocketActor extends AbstractActor {
     private Receive connected(final ActorRef connection) {
         return receiveBuilder()
                 .match(ByteString.class, msg -> {
-                    log.info("sending {}", msg);
                     connection.tell(TcpMessage.write((ByteString) msg), getSelf());
                 })
                 .match(Tcp.CommandFailed.class, msg -> {
                     // OS kernel socket buffer was full
                 })
                 .match(Tcp.Received.class, msg -> {
-                    log.info("received -> {}", msg.data());
                     listener.tell(msg.data(), getSelf());
                 })
                 .matchEquals("close", msg -> {

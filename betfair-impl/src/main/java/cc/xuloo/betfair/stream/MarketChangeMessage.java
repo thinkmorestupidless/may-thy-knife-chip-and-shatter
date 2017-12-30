@@ -37,53 +37,47 @@ import java.util.List;
 @Value
 public class MarketChangeMessage implements ResponseMessage  {
 
-  /**
-   * Change Type - set to indicate the type of change - if null this is a delta)
-   */
-  public enum CtEnum {
+    /**
+     * Change Type - set to indicate the type of change - if null this is a delta)
+     */
+    public enum CtEnum {
 
-    SUB_IMAGE("SUB_IMAGE"),
-    RESUB_DELTA("RESUB_DELTA"),
-    HEARTBEAT("HEARTBEAT");
+        SUB_IMAGE("SUB_IMAGE"),
+        RESUB_DELTA("RESUB_DELTA"),
+        HEARTBEAT("HEARTBEAT");
 
-    private String value;
+        private String value;
 
-    CtEnum(String value) {
-      this.value = value;
+        CtEnum(String value) {
+          this.value = value;
+        }
+
+        @Override
+        public String toString() {
+        return String.valueOf(value);
+      }
     }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-  }
-
-  /**
-   * Segment Type - if the change is split into multiple segments, this denotes the beginning and end of a change, and segments in between. Will be null if data is not segmented
-   */
-  public enum SegmentTypeEnum {
-
-    SEG_START("SEG_START"),
-    SEG("SEG"),
-    SEG_END("SEG_END");
-
-    private String value;
-
-    SegmentTypeEnum(String value) {
-      this.value = value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-  }
 
     /**
-     * The operation type
-     * @return op
-     **/
-    private final String op;
+     * Segment Type - if the change is split into multiple segments, this denotes the beginning and end of a change, and segments in between. Will be null if data is not segmented
+     */
+    public enum SegmentTypeEnum {
+
+        SEG_START("SEG_START"),
+        SEG("SEG"),
+        SEG_END("SEG_END");
+
+        private String value;
+
+        SegmentTypeEnum(String value) {
+          this.value = value;
+        }
+
+        @Override
+        public String toString() {
+        return String.valueOf(value);
+      }
+    }
 
     /**
      * Client generated unique id to link request with response (like json rpc)
@@ -145,8 +139,7 @@ public class MarketChangeMessage implements ResponseMessage  {
     **/
     private final Integer status;
 
-    public MarketChangeMessage(@JsonProperty("op") String op,
-                               @JsonProperty("id") Integer id,
+    public MarketChangeMessage(@JsonProperty("id") Integer id,
                                @JsonProperty("ct") CtEnum ct,
                                @JsonProperty("clk") String clk,
                                @JsonProperty("heartbeatMs") Long heartbeatMs,
@@ -156,7 +149,6 @@ public class MarketChangeMessage implements ResponseMessage  {
                                @JsonProperty("conflateMs") Long conflateMs,
                                @JsonProperty("segmentType") SegmentTypeEnum segmentType,
                                @JsonProperty("status") Integer status) {
-        this.op = op;
         this.id = id;
         this.ct = ct;
         this.clk = clk;

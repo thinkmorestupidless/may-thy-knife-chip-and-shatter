@@ -5,6 +5,8 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import cc.xuloo.betfair.aping.entities.MarketFilter;
+import cc.xuloo.betfair.client.BetfairSession;
 import cc.xuloo.betfair.client.ExchangeApi;
 
 public class BetfairExchangeActor extends AbstractActor {
@@ -27,6 +29,7 @@ public class BetfairExchangeActor extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(ExchangeProtocol.Login.class, this::handleLogin)
+                .match(ExchangeProtocol.Command.class, this::handleCommand)
                 .build();
     }
 
@@ -36,5 +39,19 @@ public class BetfairExchangeActor extends AbstractActor {
         listener = getSender();
 
         api.login().thenAccept(response -> listener.tell(response, getSelf()));
+    }
+
+    public void handleCommand(ExchangeProtocol.Command cmd) {
+        BetfairSession session = cmd.getSession();
+        ExchangeProtocol protocol = cmd.getCommand();
+
+        if (protocol instanceof ExchangeProtocol.ListEvents) {
+            log.info("listing events");
+
+            MarketFilter filter = ((ExchangeProtocol.ListEvents) protocol).getFilter();
+
+            api.listEvents(session, filter).thenAccept(response ->
+                getSender().tell(response, getSelf()));
+        }
     }
 }

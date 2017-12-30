@@ -37,12 +37,6 @@ import lombok.Value;
 public class OrderSubscriptionMessage implements RequestMessage  {
 
     /**
-     * The operation type
-     * @return op
-     **/
-    private final String op;
-
-    /**
      * Client generated unique id to link request with response (like json rpc)
      * @return id
      **/
@@ -84,15 +78,13 @@ public class OrderSubscriptionMessage implements RequestMessage  {
     **/
     private final Long conflateMs;
 
-    public OrderSubscriptionMessage(@JsonProperty("op") String op,
-                                    @JsonProperty("id") Integer id,
+    public OrderSubscriptionMessage(@JsonProperty("id") Integer id,
                                     @JsonProperty("segmentationEnabled") Boolean segmentationEnabled,
                                     @JsonProperty("orderFilter") OrderFilter orderFilter,
                                     @JsonProperty("clk") String clk,
                                     @JsonProperty("heartbeatMs") Long heartbeatMs,
                                     @JsonProperty("initialClk") String initialClk,
                                     @JsonProperty("conflateMs") Long conflateMs) {
-        this.op = op;
         this.id = id;
         this.segmentationEnabled = segmentationEnabled;
         this.orderFilter = orderFilter;
@@ -100,10 +92,6 @@ public class OrderSubscriptionMessage implements RequestMessage  {
         this.heartbeatMs = heartbeatMs;
         this.initialClk = initialClk;
         this.conflateMs = conflateMs;
-    }
-
-    public String getOp() {
-        return op;
     }
 
     public Integer getId() {

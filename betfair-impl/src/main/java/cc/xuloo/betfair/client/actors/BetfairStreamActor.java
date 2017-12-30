@@ -5,6 +5,7 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import cc.xuloo.betfair.stream.StreamProtocol;
 
 public class BetfairStreamActor extends AbstractActor {
 
@@ -23,7 +24,7 @@ public class BetfairStreamActor extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(StreamProtocol.class, msg -> socket.tell(msg, getSelf()))
+                .match(StreamProtocol.class, msg -> socket.forward(msg, getContext()))
                 .matchAny(o -> log.info("i don't know what to do with {}", o))
                 .build();
     }
