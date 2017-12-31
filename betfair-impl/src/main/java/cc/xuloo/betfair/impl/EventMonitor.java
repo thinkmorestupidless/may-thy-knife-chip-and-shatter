@@ -72,17 +72,23 @@ public class EventMonitor extends AbstractActor {
         } else {
             List<MarketCatalogue> catalogues = container.getResult();
 
-            catalogues.forEach(catalogue -> {
-                cc.xuloo.betfair.stream.MarketFilter streamFilter = cc.xuloo.betfair.stream.MarketFilter.builder()
-                        .marketId(catalogue.getMarketId())
-                        .build();
+            if (catalogues.size() > 0) {
+                subscribeToMarket(catalogues.get(0));
+            }
 
-                MarketSubscriptionMessage msg = MarketSubscriptionMessage.builder()
-                        .marketFilter(streamFilter)
-                        .build();
-
-                betfair.tell(msg, getSelf());
-            });
+//            catalogues.forEach(this::subscribeToMarket);
         }
+    }
+
+    public void subscribeToMarket(MarketCatalogue catalogue) {
+        cc.xuloo.betfair.stream.MarketFilter streamFilter = cc.xuloo.betfair.stream.MarketFilter.builder()
+                .marketId(catalogue.getMarketId())
+                .build();
+
+        MarketSubscriptionMessage msg = MarketSubscriptionMessage.builder()
+                .marketFilter(streamFilter)
+                .build();
+
+        betfair.tell(msg, getSelf());
     }
 }

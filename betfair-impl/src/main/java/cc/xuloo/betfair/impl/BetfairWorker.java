@@ -38,6 +38,7 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
         return receiveBuilder()
                 .match(BetfairProtocol.Start.class, this::start)
                 .match(EventResultContainer.class, this::handleEventResultContainer)
+                .matchAny(o -> log.info("i don't know what to do with {}", o))
                 .build();
     }
 
@@ -49,7 +50,10 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
                                           .marketCountries(Sets.newHashSet("GB"))
                                           .build();
 
-        betfair.tell(ExchangeProtocol.ListEvents.builder().filter(filter).build(), ActorRef.noSender());
+        betfair.tell(ExchangeProtocol.ListEvents
+                .builder()
+                .filter(filter)
+                .build(), getSelf());
     }
 
     private void handleEventResultContainer(EventResultContainer container) {

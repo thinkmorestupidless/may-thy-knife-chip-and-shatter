@@ -1,5 +1,6 @@
 package cc.xuloo.betfair.client.actors;
 
+import akka.actor.ActorRef;
 import cc.xuloo.betfair.aping.entities.MarketFilter;
 import cc.xuloo.betfair.aping.enums.MarketProjection;
 import cc.xuloo.betfair.aping.enums.MarketSort;
@@ -19,6 +20,8 @@ public interface ExchangeProtocol {
     class Command implements ExchangeProtocol {
 
         private final BetfairSession session;
+
+        private final ActorRef listener;
 
         private final ExchangeProtocol command;
     }

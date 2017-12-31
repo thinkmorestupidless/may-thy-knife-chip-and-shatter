@@ -12,6 +12,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.lightbend.lagom.javadsl.server.ServiceGuiceSupport;
 import com.typesafe.config.Config;
 import org.slf4j.Logger;
@@ -39,10 +40,10 @@ public class BetfairModule extends AbstractModule implements ServiceGuiceSupport
     @Provides
     @Singleton
     @Named("betfair-client")
-    ActorRef betfairClient(Config config, ActorSystem system) {
+    ActorRef betfairClient(Config config, ActorSystem system, PersistentEntityRegistry registry) {
         ObjectMapper mapper = new ObjectMapper();
 
-        ActorRef socketListener = system.actorOf(SocketListeningActor.props(), "socket-listener");
+        ActorRef socketListener = system.actorOf(SocketListeningActor.props(registry), "socket-listener");
 
         InetSocketAddress address = InetSocketAddress.createUnresolved(config.getString("betfair.stream.uri"), config.getInt("betfair.stream.port"));
         ActorRef socket = system.actorOf(SocketActor.props(), "socket-actor");
@@ -55,6 +56,6 @@ public class BetfairModule extends AbstractModule implements ServiceGuiceSupport
         ActorRef betfairStream = system.actorOf(BetfairStreamActor.props(betfairSocket), "betfair-stream");
         ActorRef betfairExchange = system.actorOf(BetfairExchangeActor.props(exchange), "betfair-exchange");
 
-        return system.actorOf(BetfairClientActor.props(config, mapper, betfairExchange, betfairStream), "betfair-client");
+        return system.actorOf(BetfairClientActor.props(config, mapper, betfairExchange, betfairStream, socketListener), "betfair-client");
     }
 }

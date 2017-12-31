@@ -46,12 +46,27 @@ public class BetfairExchangeActor extends AbstractActor {
         ExchangeProtocol protocol = cmd.getCommand();
 
         if (protocol instanceof ExchangeProtocol.ListEvents) {
-            log.info("listing events");
+            log.info("listing events -> {} {}", cmd.getListener(), getSender());
 
             MarketFilter filter = ((ExchangeProtocol.ListEvents) protocol).getFilter();
 
-            api.listEvents(session, filter).thenAccept(response ->
-                getSender().tell(response, getSelf()));
+            api.listEvents(session, filter)
+                    .exceptionally(t -> {
+                        log.warning("problem listing events: {}", t);
+                        return null;
+                    }).thenAccept(response -> {
+                log.info("sending {} to {}", response, cmd.getListener());
+                        cmd.getListener().tell(response, getSelf());
+                    }
+                );
+        } else if (protocol instanceof ExchangeProtocol.ListMarketCatalogues) {
+            log.info("listing market catalogues -> {} {}", cmd.getListener(), getSender());
+
+            ExchangeProtocol.ListMarketCatalogues lmc = (ExchangeProtocol.ListMarketCatalogues) cmd.getCommand();
+
+            api.listMarketCatalogue(cmd.getSession(), lmc.getFilter(), lmc.getMarketProjections(), lmc.getSort(), lmc.getMaxResults()).thenAccept(result -> {
+                cmd.getListener().tell(result, getSelf());
+            });
         }
     }
 }
