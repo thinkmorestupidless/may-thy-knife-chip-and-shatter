@@ -25,7 +25,7 @@ public class BetfairStreamActor extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(StreamProtocol.class, msg -> socket.forward(msg, getContext()))
-                .matchAny(o -> log.info("i don't know what to do with {}", o))
+                .matchAny(o -> log.warning("i don't know what to do with {}", o))
                 .build();
     }
 }

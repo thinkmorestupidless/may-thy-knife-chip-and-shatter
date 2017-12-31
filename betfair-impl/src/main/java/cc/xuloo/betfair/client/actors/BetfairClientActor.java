@@ -54,10 +54,10 @@ public class BetfairClientActor extends AbstractActorWithStash {
 
     @Override
     public void preStart() throws Exception {
-        log.info("starting up the betfair client");
+        log.debug("starting up the betfair client");
 
         if (config.getString("mtkcas.betfair.monitor").equals("auto-start")) {
-            log.info("auto-starting betfair client - logging in");
+            log.debug("auto-starting betfair client - logging in");
 
             exchange.tell(new ExchangeProtocol.Login(), getSelf());
         }
@@ -81,7 +81,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
                 })
                 .match(LoginResponse.class, msg -> {
                     if (msg.getLoginStatus().equals("SUCCESS")) {
-                        log.info("logged in to Betfair successfully");
+                        log.debug("logged in to Betfair successfully");
 
                         session = BetfairSession.loggedIn(msg.getSessionToken(), config.getString("betfair.applicationKey"));
 
@@ -96,7 +96,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
                 })
                 .match(ByteString.class, this::handleByteString)
                 .match(ExchangeProtocol.class, x -> stash())
-                .matchAny(o -> log.info("i don't know what to do with {}", o))
+                .matchAny(o -> log.warning("i don't know what to do with {}", o))
                 .build();
     }
 
@@ -113,7 +113,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
                     stream.forward(msg, getContext());
                 })
                 .match(ByteString.class, this::handleByteString)
-                .matchAny(o -> log.info("i'm logged in and i don't know what to do with {}", o))
+                .matchAny(o -> log.warning("i'm logged in and i don't know what to do with {}", o))
                 .build();
 
     }
@@ -141,7 +141,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
 
             if (msg != null) {
                 if (msg instanceof ConnectionMessage) {
-                    log.info("handling connection message");
+                    log.debug("handling connection message");
 
                     stream.tell(AuthenticationMessage.builder()
                             .id(1)
@@ -150,10 +150,10 @@ public class BetfairClientActor extends AbstractActorWithStash {
                             .build(), getSelf());
 
                 } else if (msg instanceof StatusMessage) {
-                    log.info("Handling status message {}", msg);
+                    log.debug("Handling status message {}", msg);
 
                     if (msg.getId() != null && msg.getId().equals(1)) {
-                        log.info("stream succesfully authenticated");
+                        log.debug("stream succesfully authenticated");
 
                         unstashAll();
                         getContext().become(loggedIn());
@@ -174,7 +174,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
                                 PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, marketChange.getMarketDefinition().getEventId());
 
 
-                                if (marketChange.getImg() != null) {
+                                if (marketChange.getImg() != null && marketChange.getImg()) {
                                     log.info("Adding market data for {}", marketChange.getId());
 
                                     entity.ask(new BetfairCommand.AddMarketData(marketChange));
@@ -185,7 +185,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
                         }
                     }
                 } else {
-                    log.info("i don't know what to do with -> {}", msg);
+                    log.warning("i don't know what to do with -> {}", msg);
                 }
             }
         }

@@ -40,7 +40,7 @@ public class ExchangeApi implements ExchangeConstants, ExchangeOperations {
     }
 
     public CompletionStage<EventTypeResultContainer> listEventTypes(BetfairSession session, MarketFilter filter) {
-        log.info("listEventTypes({})", filter);
+        log.debug("listEventTypes({})", filter);
 
         JsonRequest request = JsonRequest.builder()
                                          .method(ExchangeOperations.LIST_EVENT_TYPES)
@@ -52,7 +52,7 @@ public class ExchangeApi implements ExchangeConstants, ExchangeOperations {
     }
 
     public CompletionStage<EventResultContainer> listEvents(BetfairSession session, MarketFilter filter) {
-        log.info("listEvents({})", filter);
+        log.debug("listEvents({})", filter);
 
         JsonRequest request = JsonRequest.builder()
                                          .method(ExchangeOperations.LIST_EVENTS)
@@ -76,7 +76,7 @@ public class ExchangeApi implements ExchangeConstants, ExchangeOperations {
      * @return
      */
     public CompletionStage<ListMarketCatalogueContainer> listMarketCatalogue(BetfairSession session, MarketFilter filter, Set<MarketProjection> marketProjection, MarketSort sort, int maxResults) {
-        log.info("listMarketCatalogue({},{},{},{})", filter, marketProjection, sort, maxResults);
+        log.debug("listMarketCatalogue({},{},{},{})", filter, marketProjection, sort, maxResults);
 
         JsonRequest request = JsonRequest.builder()
                                          .method(ExchangeOperations.LIST_MARKET_CATALOGUE)
@@ -92,10 +92,7 @@ public class ExchangeApi implements ExchangeConstants, ExchangeOperations {
 
     public <T> CompletionStage<T> execute(BetfairSession session, String request, Class<T> clazz) {
         return connection.execute(session, request)
-                         .thenApply(body -> {
-                             log.info("response -> {}", body);
-                             return objectify(body, clazz);
-                         });
+                         .thenApply(body -> objectify(body, clazz));
     }
 
     public String jsonify(Object o) {

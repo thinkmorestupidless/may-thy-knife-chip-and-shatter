@@ -2,15 +2,16 @@ package cc.xuloo.betfair.impl;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.routing.SmallestMailboxPool;
 import cc.xuloo.betfair.aping.containers.EventResultContainer;
+import cc.xuloo.betfair.aping.entities.Event;
 import cc.xuloo.betfair.aping.entities.EventResult;
 import cc.xuloo.betfair.aping.entities.MarketFilter;
 import cc.xuloo.betfair.client.actors.ExchangeProtocol;
 import com.google.common.collect.Sets;
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRef;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.typesafe.config.Config;
@@ -20,21 +21,21 @@ import java.util.List;
 
 public class BetfairWorker extends AbstractActor implements InjectedActorSupport {
 
-    final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+    public static Props props(Config config, ActorRef betfair, PersistentEntityRegistry registry) {
+        return Props.create(BetfairWorker.class, config, betfair, registry);
+    }
+
+    private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
     private final Config config;
 
     private final ActorRef betfair;
 
-    private final BetfairProtocol.Factory factory;
-
     private final PersistentEntityRegistry registry;
 
-    @Inject
-    public BetfairWorker(Config config, @Named("betfair-client") ActorRef betfair, BetfairProtocol.Factory factory, PersistentEntityRegistry registry) {
+    public BetfairWorker(Config config, ActorRef betfair, PersistentEntityRegistry registry) {
         this.config = config;
         this.betfair = betfair;
-        this.factory = factory;
         this.registry = registry;
     }
 
@@ -48,7 +49,7 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
     }
 
     private void start(BetfairProtocol.Start cmd) {
-        log.info("starting betfair worker");
+        log.debug("starting betfair worker");
 
         MarketFilter filter = MarketFilter.builder()
                                           .eventTypeIds(Sets.newHashSet("1"))
@@ -68,20 +69,20 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
 
             List<EventResult> result = container.getResult();
 
-            log.info("result -> {}", result);
+//            if (result.size() > 0) {
+//                EventResult first = result.get(0);
+//                handleEvent(first.getEvent());
+//            }
+            ActorRef router = getContext().actorOf(new SmallestMailboxPool(10).props(EventMonitor.props(betfair, registry)));
 
-            if (result.size() > 0) {
-                EventResult first = result.get(0);
-
-                PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, first.getEvent().getId());
-                entity.ask(new BetfairCommand.AddFixture(first.getEvent()))
-                .thenAccept(done -> {
-                    ActorRef monitor = injectedChild(() -> factory.create(), "betfair-worker");
-                    monitor.tell(new BetfairProtocol.MonitorEvent(result.get(0).getEvent()), getSelf());
-                });
-
-
-            }
+            result.forEach(eventResult -> {
+                Event event = eventResult.getEvent();
+                PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, event.getId());
+                entity.ask(new BetfairCommand.AddFixture(event))
+                        .thenAccept(done -> {
+                            router.tell(new BetfairProtocol.MonitorEvent(event), getSelf());
+                        });
+            });
         }
     }
 }

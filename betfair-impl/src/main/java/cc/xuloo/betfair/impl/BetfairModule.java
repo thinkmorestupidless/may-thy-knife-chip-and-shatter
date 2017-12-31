@@ -33,9 +33,6 @@ public class BetfairModule extends AbstractModule implements ServiceGuiceSupport
         bindService(BetfairService.class, BetfairServiceImpl.class);
 
         bind(BetfairMonitor.class).asEagerSingleton();
-
-        bindActor(BetfairWorker.class, "betfair-worker");
-        bindActorFactory(EventMonitor.class, BetfairProtocol.Factory.class);
     }
 
     @Provides

@@ -2,6 +2,7 @@ package cc.xuloo.betfair.impl;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import cc.xuloo.betfair.aping.containers.ListMarketCatalogueContainer;
@@ -12,8 +13,6 @@ import cc.xuloo.betfair.aping.enums.MarketSort;
 import cc.xuloo.betfair.client.actors.ExchangeProtocol;
 import cc.xuloo.betfair.stream.MarketSubscriptionMessage;
 import com.google.common.collect.Sets;
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRef;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 
@@ -22,14 +21,17 @@ import java.util.Set;
 
 public class EventMonitor extends AbstractActor {
 
+    public static Props props(ActorRef betfair, PersistentEntityRegistry registry) {
+        return Props.create(EventMonitor.class, betfair, registry);
+    }
+
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
     private final ActorRef betfair;
 
     private final PersistentEntityRegistry registry;
 
-    @Inject
-    public EventMonitor(@Named("betfair-client") ActorRef betfair, PersistentEntityRegistry registry) {
+    public EventMonitor(ActorRef betfair, PersistentEntityRegistry registry) {
         this.betfair = betfair;
         this.registry = registry;
     }
@@ -49,11 +51,11 @@ public class EventMonitor extends AbstractActor {
                     } else {
                         List<MarketCatalogue> catalogues = container.getResult();
 
-                        if (catalogues.size() > 0) {
-                            subscribeToMarket(catalogues.get(0), eventId);
-                        }
+//                        if (catalogues.size() > 0) {
+//                            subscribeToMarket(catalogues.get(0), eventId);
+//                        }
 
-//            catalogues.forEach(this::subscribeToMarket);
+                        catalogues.forEach(catalogue -> subscribeToMarket(catalogue, eventId));
                     }
                 })
                 .build();

@@ -71,7 +71,7 @@ public class BetfairSocketActor extends AbstractActor {
                     restartHeartbeatTimer();
                 })
                 .match(StreamProtocol.class, this::toSocket)
-                .matchAny(o -> log.info("i don't know what to do with {}", o))
+                .matchAny(o -> log.warning("i don't know what to do with {}", o))
                 .build();
     }
 
@@ -91,7 +91,7 @@ public class BetfairSocketActor extends AbstractActor {
     }
 
     public void toSocket(StreamProtocol msg) {
-        log.info("sending message {}", msg);
+        log.debug("sending message {}", msg);
 
         ByteString bs = wrap(() -> ByteString.fromString(mapper.writeValueAsString(msg) + CRLF));
         socket.tell(bs, getSelf());
