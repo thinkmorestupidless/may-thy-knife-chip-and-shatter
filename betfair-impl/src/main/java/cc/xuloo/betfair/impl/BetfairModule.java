@@ -42,6 +42,8 @@ public class BetfairModule extends AbstractModule implements ServiceGuiceSupport
     @Singleton
     @Named("betfair-client")
     ActorRef betfairClient(Config config, ActorSystem system, PersistentEntityRegistry registry) {
+        registry.register(BetfairEntity.class);
+
         ObjectMapper mapper = new ObjectMapper().registerModule(new JodaModule());
 
         ActorRef socketListener = system.actorOf(SocketListeningActor.props(registry), "socket-listener");
@@ -57,6 +59,6 @@ public class BetfairModule extends AbstractModule implements ServiceGuiceSupport
         ActorRef betfairStream = system.actorOf(BetfairStreamActor.props(betfairSocket), "betfair-stream");
         ActorRef betfairExchange = system.actorOf(BetfairExchangeActor.props(exchange), "betfair-exchange");
 
-        return system.actorOf(BetfairClientActor.props(config, mapper, betfairExchange, betfairStream, socketListener), "betfair-client");
+        return system.actorOf(BetfairClientActor.props(config, mapper, betfairExchange, betfairStream, socketListener, registry), "betfair-client");
     }
 }

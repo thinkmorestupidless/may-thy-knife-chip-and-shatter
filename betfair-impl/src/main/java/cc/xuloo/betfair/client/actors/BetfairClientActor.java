@@ -8,16 +8,21 @@ import akka.event.LoggingAdapter;
 import akka.util.ByteString;
 import cc.xuloo.betfair.client.BetfairSession;
 import cc.xuloo.betfair.client.LoginResponse;
+import cc.xuloo.betfair.impl.BetfairCommand;
+import cc.xuloo.betfair.impl.BetfairEntity;
 import cc.xuloo.betfair.stream.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lightbend.lagom.javadsl.persistence.PersistentEntityRef;
+import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.typesafe.config.Config;
 
 import java.io.IOException;
+import java.util.List;
 
 public class BetfairClientActor extends AbstractActorWithStash {
 
-    public static Props props(Config config, ObjectMapper mapper, ActorRef exchange, ActorRef stream, ActorRef listener) {
-        return Props.create(BetfairClientActor.class, config, mapper, exchange, stream, listener);
+    public static Props props(Config config, ObjectMapper mapper, ActorRef exchange, ActorRef stream, ActorRef listener, PersistentEntityRegistry registry) {
+        return Props.create(BetfairClientActor.class, config, mapper, exchange, stream, listener, registry);
     }
 
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
@@ -32,16 +37,19 @@ public class BetfairClientActor extends AbstractActorWithStash {
 
     private final ActorRef listener;
 
+    private final PersistentEntityRegistry registry;
+
     private BetfairSession session = BetfairSession.loggedOut();
 
     private StringBuilder buffer = new StringBuilder();
 
-    public BetfairClientActor(Config config, ObjectMapper mapper, ActorRef exchange, ActorRef stream, ActorRef listener) {
+    public BetfairClientActor(Config config, ObjectMapper mapper, ActorRef exchange, ActorRef stream, ActorRef listener, PersistentEntityRegistry registry) {
         this.config = config;
         this.mapper = mapper;
         this.exchange = exchange;
         this.stream = stream;
         this.listener = listener;
+        this.registry = registry;
     }
 
     @Override
@@ -150,6 +158,32 @@ public class BetfairClientActor extends AbstractActorWithStash {
                         unstashAll();
                         getContext().become(loggedIn());
                     }
+                } else if (msg instanceof MarketChangeMessage) {
+                    log.info("handling market change message -> {}", msg);
+
+                    MarketChangeMessage mcm = (MarketChangeMessage) msg;
+
+                    if (mcm.getMc() != null) {
+                        List<MarketChange> marketChanges = mcm.getMc();
+
+                        marketChanges.forEach(marketChange -> {
+                            PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, marketChange.getMarketDefinition().getEventId());
+//                            entity.ask(new BetfairCommand.AddMarketCatalogue())
+
+                            if (marketChange.getImg() != null) {
+                                log.info("Handling Image for {}", marketChange.getId());
+                            } else {
+                                log.info("handling update for {}", marketChange.getId());
+                            }
+                        });
+                    }
+
+
+
+
+
+                } else {
+                    log.info("i don't know what to do with -> {}", msg);
                 }
             }
         }

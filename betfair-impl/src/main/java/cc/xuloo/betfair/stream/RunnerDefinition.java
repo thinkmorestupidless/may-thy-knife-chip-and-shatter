@@ -42,17 +42,11 @@ public class RunnerDefinition {
   public enum Status {
 
     ACTIVE("ACTIVE"),
-
     WINNER("WINNER"),
-
     LOSER("LOSER"),
-
     REMOVED("REMOVED"),
-
     REMOVED_VACANT("REMOVED_VACANT"),
-
     HIDDEN("HIDDEN"),
-
     PLACED("PLACED");
 
     private String value;

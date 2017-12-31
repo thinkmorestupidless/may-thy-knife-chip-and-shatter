@@ -14,6 +14,7 @@ import cc.xuloo.betfair.stream.MarketSubscriptionMessage;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.lightbend.lagom.javadsl.persistence.PersistentEntityRef;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.lightbend.lagom.javadsl.pubsub.PubSubRegistry;
 
@@ -28,13 +29,10 @@ public class EventMonitor extends AbstractActor {
 
     private final PersistentEntityRegistry registry;
 
-    private final PubSubRegistry pubsub;
-
     @Inject
-    public EventMonitor(@Named("betfair-client") ActorRef betfair, PersistentEntityRegistry registry, PubSubRegistry pubsub) {
+    public EventMonitor(@Named("betfair-client") ActorRef betfair, PersistentEntityRegistry registry) {
         this.betfair = betfair;
         this.registry = registry;
-        this.pubsub = pubsub;
     }
 
     @Override
@@ -59,6 +57,7 @@ public class EventMonitor extends AbstractActor {
                 .filter(filter)
                 .marketProjection(MarketProjection.COMPETITION)
                 .marketProjection(MarketProjection.RUNNER_DESCRIPTION)
+                .marketProjection(MarketProjection.EVENT)
                 .sort(MarketSort.MAXIMUM_TRADED)
                 .maxResults(100)
                 .build();
@@ -81,14 +80,18 @@ public class EventMonitor extends AbstractActor {
     }
 
     public void subscribeToMarket(MarketCatalogue catalogue) {
-        cc.xuloo.betfair.stream.MarketFilter streamFilter = cc.xuloo.betfair.stream.MarketFilter.builder()
-                .marketId(catalogue.getMarketId())
-                .build();
+        PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, catalogue.getEvent().getId());
+        entity.ask(new BetfairCommand.AddMarketCatalogue(catalogue))
+        .thenAccept(done -> {
+            cc.xuloo.betfair.stream.MarketFilter streamFilter = cc.xuloo.betfair.stream.MarketFilter.builder()
+                    .marketId(catalogue.getMarketId())
+                    .build();
 
-        MarketSubscriptionMessage msg = MarketSubscriptionMessage.builder()
-                .marketFilter(streamFilter)
-                .build();
+            MarketSubscriptionMessage msg = MarketSubscriptionMessage.builder()
+                    .marketFilter(streamFilter)
+                    .build();
 
-        betfair.tell(msg, getSelf());
+            betfair.tell(msg, getSelf());
+        });
     }
 }

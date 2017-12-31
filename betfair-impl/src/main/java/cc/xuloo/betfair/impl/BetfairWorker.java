@@ -11,6 +11,8 @@ import cc.xuloo.betfair.client.actors.ExchangeProtocol;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.lightbend.lagom.javadsl.persistence.PersistentEntityRef;
+import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.typesafe.config.Config;
 import play.libs.akka.InjectedActorSupport;
 
@@ -26,11 +28,14 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
 
     private final BetfairProtocol.Factory factory;
 
+    private final PersistentEntityRegistry registry;
+
     @Inject
-    public BetfairWorker(Config config, @Named("betfair-client") ActorRef betfair, BetfairProtocol.Factory factory) {
+    public BetfairWorker(Config config, @Named("betfair-client") ActorRef betfair, BetfairProtocol.Factory factory, PersistentEntityRegistry registry) {
         this.config = config;
         this.betfair = betfair;
         this.factory = factory;
+        this.registry = registry;
     }
 
     @Override
@@ -68,8 +73,14 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
             if (result.size() > 0) {
                 EventResult first = result.get(0);
 
-                ActorRef monitor = injectedChild(() -> factory.create(), "betfair-worker");
-                monitor.tell(new BetfairProtocol.MonitorEvent(result.get(0).getEvent()), getSelf());
+                PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, first.getEvent().getId());
+                entity.ask(new BetfairCommand.AddFixture(first.getEvent()))
+                .thenAccept(done -> {
+                    ActorRef monitor = injectedChild(() -> factory.create(), "betfair-worker");
+                    monitor.tell(new BetfairProtocol.MonitorEvent(result.get(0).getEvent()), getSelf());
+                });
+
+
             }
         }
     }
