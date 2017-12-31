@@ -2,6 +2,7 @@ package cc.xuloo.betfair.impl;
 
 import cc.xuloo.betfair.aping.entities.Event;
 import cc.xuloo.betfair.aping.entities.MarketCatalogue;
+import cc.xuloo.betfair.stream.MarketChange;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.lightbend.lagom.javadsl.persistence.AggregateEvent;
@@ -36,6 +37,18 @@ public interface BetfairEvent extends Jsonable, AggregateEvent<BetfairEvent> {
         @JsonCreator
         public MarketCatalogueAdded(MarketCatalogue catalogue) {
             this.catalogue = catalogue;
+        }
+    }
+
+    @Value
+    @JsonDeserialize
+    class MarketDataAdded implements BetfairEvent {
+
+        private final MarketChange data;
+
+        @JsonCreator
+        public MarketDataAdded(MarketChange data) {
+            this.data = data;
         }
     }
 

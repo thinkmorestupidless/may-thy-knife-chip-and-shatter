@@ -172,12 +172,14 @@ public class BetfairClientActor extends AbstractActorWithStash {
 
                             marketChanges.forEach(marketChange -> {
                                 PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, marketChange.getMarketDefinition().getEventId());
-//                            entity.ask(new BetfairCommand.AddMarketCatalogue())
+
 
                                 if (marketChange.getImg() != null) {
-                                    log.info("Handling Image for {}", marketChange.getId());
+                                    log.info("Adding market data for {}", marketChange.getId());
+
+                                    entity.ask(new BetfairCommand.AddMarketData(marketChange));
                                 } else {
-                                    log.info("handling update for {}", marketChange.getId());
+                                    log.info("Merging market data for {}", marketChange.getId());
                                 }
                             });
                         }

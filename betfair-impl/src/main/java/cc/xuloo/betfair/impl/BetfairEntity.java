@@ -25,6 +25,13 @@ public class BetfairEntity extends PersistentEntity<BetfairCommand, BetfairEvent
         b.setEventHandler(BetfairEvent.MarketCatalogueAdded.class,
                 evt -> state().withMarketCatalogue(evt.getCatalogue()));
 
+        b.setCommandHandler(BetfairCommand.AddMarketData.class, (cmd, ctx) ->
+            ctx.thenPersist(new BetfairEvent.MarketDataAdded(cmd.getData()),
+                    evt -> ctx.reply(Done.getInstance())));
+
+        b.setEventHandler(BetfairEvent.MarketDataAdded.class,
+                evt -> state().withMarketData(evt.getData()));
+
         return b.build();
     }
 }

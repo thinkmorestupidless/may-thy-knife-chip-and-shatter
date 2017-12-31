@@ -2,10 +2,12 @@ package cc.xuloo.betfair.impl;
 
 import cc.xuloo.betfair.aping.entities.Event;
 import cc.xuloo.betfair.aping.entities.MarketCatalogue;
+import cc.xuloo.betfair.stream.MarketChange;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.lightbend.lagom.serialization.CompressedJsonable;
 import lombok.Value;
+import org.assertj.core.util.Sets;
 
 import java.util.Collections;
 import java.util.Date;
@@ -22,10 +24,10 @@ public class BetfairState implements CompressedJsonable {
 
     private final Event event;
 
-    private final Set<MarketCatalogue> markets;
+    private final Set<MarketState> markets;
 
     @JsonCreator
-    public BetfairState(Event event, Set<MarketCatalogue> markets) {
+    public BetfairState(Event event, Set<MarketState> markets) {
         this.event = event;
         this.markets = markets;
     }
@@ -35,8 +37,22 @@ public class BetfairState implements CompressedJsonable {
     }
 
     public BetfairState withMarketCatalogue(MarketCatalogue catalogue) {
-        Set<MarketCatalogue> markets = new HashSet<>(this.markets);
-        Collections.addAll(markets, catalogue);
+        Set<MarketState> markets = new HashSet<>(this.markets);
+        Collections.addAll(markets, MarketState.from(catalogue));
+
+        return new BetfairState(event, markets);
+    }
+
+    public BetfairState withMarketData(MarketChange data) {
+        Set<MarketState> markets = Sets.newHashSet();
+
+        for (MarketState state : this.markets) {
+            if (state.getCatalogue().getMarketId().equals(data.getId())) {
+                markets.add(state.withData(data));
+            } else {
+                markets.add(state);
+            }
+        }
 
         return new BetfairState(event, markets);
     }

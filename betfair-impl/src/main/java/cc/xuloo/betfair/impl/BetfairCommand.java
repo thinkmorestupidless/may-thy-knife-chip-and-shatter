@@ -35,4 +35,16 @@ public interface BetfairCommand extends Jsonable {
             this.catalogue = catalogue;
         }
     }
-}
+
+    @Value
+    @JsonDeserialize
+    class AddMarketData implements BetfairCommand, PersistentEntity.ReplyType<Done> {
+
+        private final MarketChange data;
+
+        @JsonCreator
+        public AddMarketData(MarketChange data) {
+            this.data = data;
+        }
+    }
+ }
