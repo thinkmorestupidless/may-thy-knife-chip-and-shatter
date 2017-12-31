@@ -38,10 +38,7 @@ public class BetfairStream {
     }
 
     public CompletionStage<ResponseMessage> subscribe(MarketFilter marketFilter, MarketDataFilter marketDataFilter) {
-        log.info("subscribing to market {}", marketFilter);
-        return socket.authenticate().thenCompose(response -> {
-            log.info("authenticated, sending");
-            return socket.send(MarketSubscriptionMessage.builder().id(counter.getAndIncrement()).marketFilter(marketFilter).marketDataFilter(marketDataFilter).build());
-        });
+        return socket.authenticate().thenCompose(response ->
+                socket.send(MarketSubscriptionMessage.builder().id(counter.getAndIncrement()).marketFilter(marketFilter).marketDataFilter(marketDataFilter).build()));
     }
 }

@@ -35,7 +35,7 @@ import java.util.List;
  * MarketChange
  */
 @Value
-public class MarketChange   {
+public class MarketChange {
 
   private final List<RunnerChange> rc;
 

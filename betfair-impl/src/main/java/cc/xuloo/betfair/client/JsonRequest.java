@@ -1,11 +1,13 @@
 package cc.xuloo.betfair.client;
 
-import com.google.common.collect.Maps;
+import lombok.Builder;
+import lombok.Singular;
 import lombok.Value;
 
 import java.util.Map;
 
 @Value
+@Builder
 public class JsonRequest {
 
     private final String jsonrpc = "2.0";
@@ -14,27 +16,6 @@ public class JsonRequest {
 
     private final String method;
 
+    @Singular
     private final Map<String, Object> params;
-
-    public static JsonRequest create() {
-        return new JsonRequest("", Maps.newHashMap());
-    }
-
-    public JsonRequest withMethod(String method) {
-        return new JsonRequest(method, params);
-    }
-
-    public JsonRequest withParam(String key, Object value) {
-        Map<String, Object> map = params;
-
-        if (map == null) {
-            map = Maps.newHashMap();
-        }
-
-        if (value != null) {
-            map.put(key, value);
-        }
-
-        return new JsonRequest(method, map);
-    }
 }

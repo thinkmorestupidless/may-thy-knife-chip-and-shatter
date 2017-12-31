@@ -41,29 +41,17 @@ public class StatusMessage implements ResponseMessage  {
     public enum ErrorCode {
 
         NO_APP_KEY("NO_APP_KEY"),
-
         INVALID_APP_KEY("INVALID_APP_KEY"),
-
         NO_SESSION("NO_SESSION"),
-
         INVALID_SESSION_INFORMATION("INVALID_SESSION_INFORMATION"),
-
         NOT_AUTHORIZED("NOT_AUTHORIZED"),
-
         INVALID_INPUT("INVALID_INPUT"),
-
         INVALID_CLOCK("INVALID_CLOCK"),
-
         UNEXPECTED_ERROR("UNEXPECTED_ERROR"),
-
         TIMEOUT("TIMEOUT"),
-
         SUBSCRIPTION_LIMIT_EXCEEDED("SUBSCRIPTION_LIMIT_EXCEEDED"),
-
         INVALID_REQUEST("INVALID_REQUEST"),
-
         CONNECTION_FAILED("CONNECTION_FAILED"),
-
         MAX_CONNECTION_LIMIT_EXCEEDED("MAX_CONNECTION_LIMIT_EXCEEDED");
 
         private String value;
@@ -84,7 +72,6 @@ public class StatusMessage implements ResponseMessage  {
     public enum StatusCode {
 
         SUCCESS("SUCCESS"),
-
         FAILURE("FAILURE");
 
         private String value;
@@ -98,12 +85,6 @@ public class StatusMessage implements ResponseMessage  {
       return String.valueOf(value);
     }
     }
-
-    /**
-     * The operation type
-     * @return op
-     **/
-    private final String op;
 
     /**
      * Client generated unique id to link request with response (like json rpc)
@@ -121,13 +102,11 @@ public class StatusMessage implements ResponseMessage  {
 
     private final StatusCode statusCode;
 
-    public StatusMessage(@JsonProperty("op") String op,
-                       @JsonProperty("id") Integer id,
+    public StatusMessage(@JsonProperty("id") Integer id,
                        @JsonProperty("errorCode") ErrorCode errorCode,
                        @JsonProperty("connectionId") String connectionId,
                        @JsonProperty("connectionClosed") Boolean connectionClosed,
                        @JsonProperty("statusCode") StatusCode statusCode) {
-        this.op = op;
         this.id = id;
         this.errorCode = errorCode;
         this.connectionId = connectionId;

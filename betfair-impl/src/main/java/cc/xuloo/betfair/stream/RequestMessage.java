@@ -38,11 +38,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 )
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AuthenticationMessage.class, name = "authentication"),
-        @JsonSubTypes.Type(value = MarketSubscriptionMessage.class, name = "marketSubscription")
+        @JsonSubTypes.Type(value = MarketSubscriptionMessage.class, name = "marketSubscription"),
+        @JsonSubTypes.Type(value = OrderSubscriptionMessage.class, name = "orderSubscription"),
+        @JsonSubTypes.Type(value = HeartbeatMessage.class, name = "heartbeat")
 })
-public interface RequestMessage {
-
-    String getOp();
+public interface RequestMessage extends StreamProtocol {
 
     Integer getId();
 }

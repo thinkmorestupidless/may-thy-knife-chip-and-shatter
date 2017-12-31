@@ -37,12 +37,6 @@ import lombok.Value;
 public class MarketSubscriptionMessage implements RequestMessage  {
 
     /**
-     * The operation type
-     * @return op
-     **/
-    private final String op;
-
-    /**
      * Client generated unique id to link request with response (like json rpc)
      * @return id
      **/
@@ -82,8 +76,7 @@ public class MarketSubscriptionMessage implements RequestMessage  {
 
     private final MarketDataFilter marketDataFilter;
 
-    public MarketSubscriptionMessage(@JsonProperty("op") String op,
-                                     @JsonProperty("id") Integer id,
+    public MarketSubscriptionMessage(@JsonProperty("id") Integer id,
                                      @JsonProperty("segmentationEnabled") Boolean segmentationEnabled,
                                      @JsonProperty("clk") String clk,
                                      @JsonProperty("heartbeatMs") Long heartbeatMs,
@@ -91,7 +84,6 @@ public class MarketSubscriptionMessage implements RequestMessage  {
                                      @JsonProperty("marketFilter") MarketFilter marketFilter,
                                      @JsonProperty("conflateMs") Long conflateMs,
                                      @JsonProperty("marketDataFilter") MarketDataFilter marketDataFilter) {
-        this.op = op;
         this.id = id;
         this.segmentationEnabled = segmentationEnabled;
         this.clk = clk;
@@ -100,10 +92,6 @@ public class MarketSubscriptionMessage implements RequestMessage  {
         this.marketFilter = marketFilter;
         this.conflateMs = conflateMs;
         this.marketDataFilter = marketDataFilter;
-    }
-
-    public String getOp() {
-        return op;
     }
 
     public Integer getId() {

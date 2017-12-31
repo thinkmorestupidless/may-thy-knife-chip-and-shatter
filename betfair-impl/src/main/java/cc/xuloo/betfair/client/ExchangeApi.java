@@ -1,11 +1,11 @@
 package cc.xuloo.betfair.client;
 
 import cc.xuloo.betfair.aping.containers.EventResultContainer;
-import cc.xuloo.betfair.aping.enums.MarketSort;
 import cc.xuloo.betfair.aping.containers.EventTypeResultContainer;
 import cc.xuloo.betfair.aping.containers.ListMarketCatalogueContainer;
 import cc.xuloo.betfair.aping.entities.MarketFilter;
 import cc.xuloo.betfair.aping.enums.MarketProjection;
+import cc.xuloo.betfair.aping.enums.MarketSort;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,12 +24,9 @@ public class ExchangeApi implements ExchangeConstants, ExchangeOperations {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private final SessionProvider sessionProvider;
-
     private final BetfairConnection connection;
 
-    public ExchangeApi(SessionProvider sessionProvider, BetfairConnection connection) {
-        this.sessionProvider = sessionProvider;
+    public ExchangeApi(BetfairConnection connection) {
         this.connection = connection;
     }
 
@@ -39,29 +36,31 @@ public class ExchangeApi implements ExchangeConstants, ExchangeOperations {
                     log.error("error logging in -> {}", t);
                     return null;
                 })
-                .thenApply(resp -> wrap(() -> mapper.readValue(resp, LoginResponse.class)));
+                .thenApply(resp -> objectify(resp, LoginResponse.class));
     }
 
-    public CompletionStage<EventTypeResultContainer> listEventTypes(MarketFilter filter) {
+    public CompletionStage<EventTypeResultContainer> listEventTypes(BetfairSession session, MarketFilter filter) {
         log.info("listEventTypes({})", filter);
 
-        JsonRequest request = JsonRequest.create()
-                                         .withMethod(ExchangeOperations.LIST_EVENT_TYPES)
-                                         .withParam(ExchangeConstants.FILTER, filter)
-                                         .withParam(ExchangeConstants.LOCALE, locale);
+        JsonRequest request = JsonRequest.builder()
+                                         .method(ExchangeOperations.LIST_EVENT_TYPES)
+                                         .param(ExchangeConstants.FILTER, filter)
+                                         .param(ExchangeConstants.LOCALE, locale)
+                                         .build();
 
-        return execute(jsonify(request), EventTypeResultContainer.class);
+        return execute(session, jsonify(request), EventTypeResultContainer.class);
     }
 
-    public CompletionStage<EventResultContainer> listEvents(MarketFilter filter) {
+    public CompletionStage<EventResultContainer> listEvents(BetfairSession session, MarketFilter filter) {
         log.info("listEvents({})", filter);
 
-        JsonRequest request = JsonRequest.create()
-                                         .withMethod(ExchangeOperations.LIST_EVENTS)
-                                         .withParam(ExchangeConstants.FILTER, filter)
-                                         .withParam(ExchangeConstants.LOCALE, locale);
+        JsonRequest request = JsonRequest.builder()
+                                         .method(ExchangeOperations.LIST_EVENTS)
+                                         .param(ExchangeConstants.FILTER, filter)
+                                         .param(ExchangeConstants.LOCALE, locale)
+                                         .build();
 
-        return execute(jsonify(request), EventResultContainer.class);
+        return execute(session, jsonify(request), EventResultContainer.class);
     }
 
     /**
@@ -76,27 +75,27 @@ public class ExchangeApi implements ExchangeConstants, ExchangeOperations {
      *
      * @return
      */
-    public CompletionStage<ListMarketCatalogueContainer> listMarketCatalogue(MarketFilter filter, Set<MarketProjection> marketProjection, MarketSort sort, int maxResults) {
+    public CompletionStage<ListMarketCatalogueContainer> listMarketCatalogue(BetfairSession session, MarketFilter filter, Set<MarketProjection> marketProjection, MarketSort sort, int maxResults) {
         log.info("listMarketCatalogue({},{},{},{})", filter, marketProjection, sort, maxResults);
 
-        JsonRequest request = JsonRequest.create()
-                                         .withMethod(ExchangeOperations.LIST_MARKET_CATALOGUE)
-                                         .withParam(ExchangeConstants.FILTER, filter)
-                                         .withParam(ExchangeConstants.MARKET_PROJECTION, marketProjection)
-                                         .withParam(ExchangeConstants.SORT, sort)
-                                         .withParam(ExchangeConstants.MAX_RESULTS, maxResults)
-                                         .withParam(ExchangeConstants.LOCALE, locale);
+        JsonRequest request = JsonRequest.builder()
+                                         .method(ExchangeOperations.LIST_MARKET_CATALOGUE)
+                                         .param(ExchangeConstants.FILTER, filter)
+                                         .param(ExchangeConstants.MARKET_PROJECTION, marketProjection)
+                                         .param(ExchangeConstants.SORT, sort)
+                                         .param(ExchangeConstants.MAX_RESULTS, maxResults)
+                                         .param(ExchangeConstants.LOCALE, locale)
+                                         .build();
 
-        return execute(jsonify(request), ListMarketCatalogueContainer.class);
+        return execute(session, jsonify(request), ListMarketCatalogueContainer.class);
     }
 
-    public <T> CompletionStage<T> execute(String request, Class<T> clazz) {
-        return sessionProvider.session().thenCompose(session ->
-                connection.execute(session, request)
+    public <T> CompletionStage<T> execute(BetfairSession session, String request, Class<T> clazz) {
+        return connection.execute(session, request)
                          .thenApply(body -> {
                              log.info("response -> {}", body);
                              return objectify(body, clazz);
-                         }));
+                         });
     }
 
     public String jsonify(Object o) {

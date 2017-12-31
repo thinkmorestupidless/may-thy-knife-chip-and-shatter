@@ -26,6 +26,7 @@
 package cc.xuloo.betfair.stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 import lombok.Value;
 
 
@@ -33,13 +34,8 @@ import lombok.Value;
  * HeartbeatMessage
  */
 @Value
+@Builder
 public class HeartbeatMessage implements RequestMessage  {
-
-    /**
-     * The operation type
-     * @return op
-     **/
-    private final String op;
 
     /**
      * Client generated unique id to link request with response (like json rpc)
@@ -47,9 +43,7 @@ public class HeartbeatMessage implements RequestMessage  {
      **/
     private final Integer id;
 
-    public HeartbeatMessage(@JsonProperty("op") String op,
-                            @JsonProperty("id") Integer id) {
-        this.op = op;
+    public HeartbeatMessage(@JsonProperty("id") Integer id) {
         this.id = id;
     }
 }
