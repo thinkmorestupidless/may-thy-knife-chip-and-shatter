@@ -64,20 +64,30 @@ public class BetfairSocketActor extends AbstractActor {
                     socket.forward(msg, getContext());
                 })
                 .match(AuthenticationMessage.class, msg -> {
-                    timer = getContext()
-                                .getSystem()
-                                .scheduler()
-                                .schedule(FiniteDuration.create(1, TimeUnit.SECONDS),
-                                          FiniteDuration.create(10, TimeUnit.SECONDS),
-                                          getSelf(),
-                                          HeartbeatMessage.builder().id(2).build(),
-                                          getContext().getSystem().dispatcher(),
-                                          getSelf());
+                    restartHeartbeatTimer();
                     toSocket(msg);
+                })
+                .match(StreamProtocol.HeartbeatReceived.class, msg -> {
+                    restartHeartbeatTimer();
                 })
                 .match(StreamProtocol.class, this::toSocket)
                 .matchAny(o -> log.info("i don't know what to do with {}", o))
                 .build();
+    }
+
+    public void restartHeartbeatTimer() {
+        if (timer != null) {
+            timer.cancel();
+        }
+
+        timer = getContext()
+                .getSystem()
+                .scheduler()
+                .scheduleOnce(FiniteDuration.create(10, TimeUnit.SECONDS),
+                        getSelf(),
+                        HeartbeatMessage.builder().id(2).build(),
+                        getContext().getSystem().dispatcher(),
+                        getSelf());
     }
 
     public void toSocket(StreamProtocol msg) {

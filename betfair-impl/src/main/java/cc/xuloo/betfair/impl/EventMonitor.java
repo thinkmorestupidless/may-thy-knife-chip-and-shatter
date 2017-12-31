@@ -16,7 +16,6 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRef;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
-import com.lightbend.lagom.javadsl.pubsub.PubSubRegistry;
 
 import java.util.List;
 import java.util.Set;
@@ -39,7 +38,24 @@ public class EventMonitor extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(BetfairProtocol.MonitorEvent.class, this::monitorEvent)
-                .match(ListMarketCatalogueContainer.class, this::handleListMarketCatalogueContainer)
+                .build();
+    }
+
+    public Receive waitingForCatalogue(String eventId) {
+        return receiveBuilder()
+                .match(ListMarketCatalogueContainer.class, container -> {
+                    if (container.getError() != null) {
+                        log.warning("error listing market catalogues -> {}", container.getError());
+                    } else {
+                        List<MarketCatalogue> catalogues = container.getResult();
+
+                        if (catalogues.size() > 0) {
+                            subscribeToMarket(catalogues.get(0), eventId);
+                        }
+
+//            catalogues.forEach(this::subscribeToMarket);
+                    }
+                })
                 .build();
     }
 
@@ -55,32 +71,18 @@ public class EventMonitor extends AbstractActor {
 
         ExchangeProtocol protocol = ExchangeProtocol.ListMarketCatalogues.builder()
                 .filter(filter)
-                .marketProjection(MarketProjection.COMPETITION)
                 .marketProjection(MarketProjection.RUNNER_DESCRIPTION)
-                .marketProjection(MarketProjection.EVENT)
                 .sort(MarketSort.MAXIMUM_TRADED)
                 .maxResults(100)
                 .build();
 
         betfair.tell(protocol, getSelf());
+
+        getContext().become(waitingForCatalogue(cmd.getEvent().getId()));
     }
 
-    public void handleListMarketCatalogueContainer(ListMarketCatalogueContainer container) {
-        if (container.getError() != null) {
-            log.warning("error listing market catalogues -> {}", container.getError());
-        } else {
-            List<MarketCatalogue> catalogues = container.getResult();
-
-            if (catalogues.size() > 0) {
-                subscribeToMarket(catalogues.get(0));
-            }
-
-//            catalogues.forEach(this::subscribeToMarket);
-        }
-    }
-
-    public void subscribeToMarket(MarketCatalogue catalogue) {
-        PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, catalogue.getEvent().getId());
+    public void subscribeToMarket(MarketCatalogue catalogue, String eventId) {
+        PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, eventId);
         entity.ask(new BetfairCommand.AddMarketCatalogue(catalogue))
         .thenAccept(done -> {
             cc.xuloo.betfair.stream.MarketFilter streamFilter = cc.xuloo.betfair.stream.MarketFilter.builder()

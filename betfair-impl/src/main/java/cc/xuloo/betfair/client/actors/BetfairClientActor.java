@@ -163,25 +163,25 @@ public class BetfairClientActor extends AbstractActorWithStash {
 
                     MarketChangeMessage mcm = (MarketChangeMessage) msg;
 
-                    if (mcm.getMc() != null) {
-                        List<MarketChange> marketChanges = mcm.getMc();
+                    if (mcm.getCt() == MarketChangeMessage.CtEnum.HEARTBEAT) {
+                        stream.tell(new StreamProtocol.HeartbeatReceived(), getSelf());
+                    } else if (mcm.getCt() == MarketChangeMessage.CtEnum.SUB_IMAGE) {
 
-                        marketChanges.forEach(marketChange -> {
-                            PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, marketChange.getMarketDefinition().getEventId());
+                        if (mcm.getMc() != null) {
+                            List<MarketChange> marketChanges = mcm.getMc();
+
+                            marketChanges.forEach(marketChange -> {
+                                PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, marketChange.getMarketDefinition().getEventId());
 //                            entity.ask(new BetfairCommand.AddMarketCatalogue())
 
-                            if (marketChange.getImg() != null) {
-                                log.info("Handling Image for {}", marketChange.getId());
-                            } else {
-                                log.info("handling update for {}", marketChange.getId());
-                            }
-                        });
+                                if (marketChange.getImg() != null) {
+                                    log.info("Handling Image for {}", marketChange.getId());
+                                } else {
+                                    log.info("handling update for {}", marketChange.getId());
+                                }
+                            });
+                        }
                     }
-
-
-
-
-
                 } else {
                     log.info("i don't know what to do with -> {}", msg);
                 }
