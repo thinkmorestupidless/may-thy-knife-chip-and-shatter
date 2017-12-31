@@ -8,6 +8,7 @@ import cc.xuloo.betfair.client.ExchangeApi;
 import cc.xuloo.betfair.client.actors.*;
 import cc.xuloo.betfair.client.asynchttp.AsyncHttpBetfairConnection;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -41,7 +42,7 @@ public class BetfairModule extends AbstractModule implements ServiceGuiceSupport
     @Singleton
     @Named("betfair-client")
     ActorRef betfairClient(Config config, ActorSystem system, PersistentEntityRegistry registry) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JodaModule());
 
         ActorRef socketListener = system.actorOf(SocketListeningActor.props(registry), "socket-listener");
 

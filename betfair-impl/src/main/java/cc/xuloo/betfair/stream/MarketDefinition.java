@@ -25,6 +25,7 @@
 
 package cc.xuloo.betfair.stream;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 import org.joda.time.DateTime;
@@ -38,125 +39,123 @@ import java.util.List;
 @Value
 public class MarketDefinition   {
 
-  /**
-   * Gets or Sets bettingType
-   */
-  public enum BettingTypeEnum {
+    /**
+    * Gets or Sets bettingType
+    */
+    public enum BettingTypeEnum {
 
-    ODDS("ODDS"),
+        ODDS("ODDS"),
+        LINE("LINE"),
+        RANGE("RANGE"),
+        ASIAN_HANDICAP_DOUBLE_LINE("ASIAN_HANDICAP_DOUBLE_LINE"),
+        ASIAN_HANDICAP_SINGLE_LINE("ASIAN_HANDICAP_SINGLE_LINE");
 
-    LINE("LINE"),
+        private String value;
 
-    RANGE("RANGE"),
+        BettingTypeEnum(String value) {
+          this.value = value;
+        }
 
-    ASIAN_HANDICAP_DOUBLE_LINE("ASIAN_HANDICAP_DOUBLE_LINE"),
-
-    ASIAN_HANDICAP_SINGLE_LINE("ASIAN_HANDICAP_SINGLE_LINE");
-
-    private String value;
-
-    BettingTypeEnum(String value) {
-      this.value = value;
-    }
-
-    @Override
-    public String toString() {
+        @Override
+        public String toString() {
       return String.valueOf(value);
     }
-  }
-
-  /**
-   * Gets or Sets status
-   */
-  public enum StatusEnum {
-
-    INACTIVE("INACTIVE"),
-
-    OPEN("OPEN"),
-
-    SUSPENDED("SUSPENDED"),
-
-    CLOSED("CLOSED");
-
-    private String value;
-
-    StatusEnum(String value) {
-      this.value = value;
     }
 
-    @Override
-    public String toString() {
+    /**
+    * Gets or Sets status
+    */
+    public enum Status {
+
+        INACTIVE("INACTIVE"),
+        OPEN("OPEN"),
+        SUSPENDED("SUSPENDED"),
+        CLOSED("CLOSED");
+
+        private String value;
+
+        Status(String value) {
+          this.value = value;
+        }
+
+        @Override
+        public String toString() {
       return String.valueOf(value);
     }
-  }
+    }
 
-  private final String venue;
+    private final Status status;
 
-  private final DateTime settledTime;
+    private final String venue;
 
-  private final String timezone;
+    private final DateTime settledTime;
 
-  private final Double eachWayDivisor;
+    private final String timezone;
 
-  private final List<String> regulators;
+    private final Double eachWayDivisor;
 
-  private final String marketType;
+    private final List<String> regulators;
 
-  private final Double marketBaseRate;
+    private final String marketType;
 
-  private final Integer numberOfWinners;
+    private final Double marketBaseRate;
 
-  private final String countryCode;
+    private final Integer numberOfWinners;
 
-  private final Double lineMaxUnit;
+    private final String countryCode;
 
-  private final Boolean inPlay;
+    private final Double lineMaxUnit;
 
-  private final Integer betDelay;
+    private final Boolean inPlay;
 
-  private final Boolean bspMarket;
+    private final Integer betDelay;
 
-  private final BettingTypeEnum bettingType;
+    private final Boolean bspMarket;
 
-  private final Integer numberOfActiveRunners;
+    private final BettingTypeEnum bettingType;
 
-  private final Double lineMinUnit;
+    private final Integer numberOfActiveRunners;
 
-  private final String eventId;
+    private final Double lineMinUnit;
 
-  private final Boolean crossMatching;
+    private final String eventId;
 
-  private final Boolean runnersVoidable;
+    private final Boolean crossMatching;
 
-  private final Boolean turnInPlayEnabled;
+    private final Boolean runnersVoidable;
 
-  private final PriceLadderDefinition priceLadderDefinition;
+    private final Boolean turnInPlayEnabled;
 
-  private final KeyLineDefinition keyLineDefinition;
+    private final PriceLadderDefinition priceLadderDefinition;
 
-  private final DateTime suspendTime;
+    private final KeyLineDefinition keyLineDefinition;
 
-  private final Boolean discountAllowed;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    private final DateTime suspendTime;
 
-  private final Boolean persistenceEnabled;
+    private final Boolean discountAllowed;
 
-  private final List<RunnerDefinition> runners;
+    private final Boolean persistenceEnabled;
 
-  private final Long version;
+    private final List<RunnerDefinition> runners;
 
-  private final String eventTypeId;
+    private final Long version;
 
-  private final Boolean complete;
+    private final String eventTypeId;
 
-  private final DateTime openDate;
+    private final Boolean complete;
 
-  private final DateTime marketTime;
+    private final DateTime openDate;
 
-  private final Boolean bspReconciled;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    private final DateTime marketTime;
 
-  private final Double lineInterval;
+    private final Boolean bspReconciled;
 
-    public MarketDefinition(@JsonProperty("venue") String venue,
+    private final Double lineInterval;
+
+    public MarketDefinition(@JsonProperty("status") Status status,
+                            @JsonProperty("venue") String venue,
                             @JsonProperty("settledTime") DateTime settledTime,
                             @JsonProperty("timezone") String timezone,
                             @JsonProperty("eachWayDivisor") Double eachWayDivisor,
@@ -189,6 +188,7 @@ public class MarketDefinition   {
                             @JsonProperty("marketTime") DateTime marketTime,
                             @JsonProperty("bspReconciled") Boolean bspReconciled,
                             @JsonProperty("lineInterval") Double lineInterval) {
+        this.status = status;
         this.venue = venue;
         this.settledTime = settledTime;
         this.timezone = timezone;

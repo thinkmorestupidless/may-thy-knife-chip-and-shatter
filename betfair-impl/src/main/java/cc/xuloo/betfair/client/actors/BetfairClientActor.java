@@ -32,21 +32,6 @@ public class BetfairClientActor extends AbstractActorWithStash {
 
     private final ActorRef listener;
 
-    private final Receive loggedOut = receiveBuilder()
-                                        .match(ExchangeProtocol.Login.class, this::handleLogin)
-                                        .match(LoginResponse.class, this::handleLoginResponse)
-                                        .match(ByteString.class, this::handleByteString)
-                                        .match(ExchangeProtocol.class, x -> stash())
-                                        .matchAny(o -> log.info("i don't know what to do with {}", o))
-                                        .build();
-
-    private final Receive loggedIn = receiveBuilder()
-                                        .match(ExchangeProtocol.class, this::handleExchangeMessage)
-                                        .match(StreamProtocol.class, this::handleStreamMessage)
-                                        .match(ByteString.class, this::handleByteString)
-                                        .matchAny(o -> log.info("i'm logged in and i don't know what to do with {}", o))
-                                        .build();
-
     private BetfairSession session = BetfairSession.loggedOut();
 
     private StringBuilder buffer = new StringBuilder();
@@ -73,36 +58,66 @@ public class BetfairClientActor extends AbstractActorWithStash {
     @Override
     public void postStop() {
         session = BetfairSession.loggedOut();
+        buffer = new StringBuilder();
     }
 
     @Override
     public Receive createReceive() {
-        return loggedOut;
+        return loggedOut();
     }
 
-    public void handleLogin(ExchangeProtocol.Login msg) {
-        exchange.tell(msg, getSelf());
+    private Receive loggedOut() {
+        return receiveBuilder()
+                .match(ExchangeProtocol.Login.class, msg -> {
+                    exchange.tell(msg, getSelf());
+                })
+                .match(LoginResponse.class, msg -> {
+                    if (msg.getLoginStatus().equals("SUCCESS")) {
+                        log.info("logged in to Betfair successfully");
+
+                        session = BetfairSession.loggedIn(msg.getSessionToken(), config.getString("betfair.applicationKey"));
+
+                        stream.tell(ConnectMessage.builder()
+                                .host(config.getString("betfair.stream.uri"))
+                                .port(config.getInt("betfair.stream.port"))
+                                .id(0)
+                                .build(), getSelf());
+                    } else {
+                        log.warning("failed to login successfully");
+                    }
+                })
+                .match(ByteString.class, this::handleByteString)
+                .match(ExchangeProtocol.class, x -> stash())
+                .matchAny(o -> log.info("i don't know what to do with {}", o))
+                .build();
     }
 
-    public void handleLoginResponse(LoginResponse msg) {
-        if (msg.getLoginStatus().equals("SUCCESS")) {
-            log.info("logged in to Betfair successfully");
+    private Receive loggedIn() {
+        return receiveBuilder()
+                .match(ExchangeProtocol.class, msg -> {
+                    exchange.tell(ExchangeProtocol.Command.builder()
+                            .command(msg)
+                            .session(session)
+                            .listener(getSender())
+                            .build(), getSelf());
+                })
+                .match(StreamProtocol.class, msg -> {
+                    stream.forward(msg, getContext());
+                })
+                .match(ByteString.class, this::handleByteString)
+                .matchAny(o -> log.info("i'm logged in and i don't know what to do with {}", o))
+                .build();
 
-            session = BetfairSession.loggedIn(msg.getSessionToken(), config.getString("betfair.applicationKey"));
+    }
 
-            stream.tell(ConnectMessage.builder()
-                    .host(config.getString("betfair.stream.uri"))
-                    .port(config.getInt("betfair.stream.port"))
-                    .id(0)
-                    .build(), getSelf());
-        } else {
-            log.warning("failed to login successfully");
-        }
+    private void buffer(ByteString bytes) {
+
     }
 
     public void handleByteString(ByteString bytes) {
 
-        buffer.append(bytes.utf8String());
+        String s = bytes.utf8String();
+        buffer.append(s);
 
         if (buffer.toString().endsWith("\r\n")) {
 
@@ -111,7 +126,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
             try {
                 msg = mapper.readValue(buffer.toString(), ResponseMessage.class);
             } catch (IOException e) {
-                log.error("problem reading json value -> {} :: {}", bytes.utf8String(), e);
+                log.error("problem reading json value -> {} -> {}", buffer.toString(), e);
             }
 
             buffer = new StringBuilder();
@@ -133,26 +148,10 @@ public class BetfairClientActor extends AbstractActorWithStash {
                         log.info("stream succesfully authenticated");
 
                         unstashAll();
-                        getContext().become(loggedIn);
+                        getContext().become(loggedIn());
                     }
                 }
             }
         }
-    }
-
-    public void handleStreamMessage(StreamProtocol msg) {
-        stream.forward(msg, getContext());
-    }
-
-    public void handleExchangeMessage(ExchangeProtocol msg) {
-        log.info("handling exchange message -> {}", getSender());
-
-        ExchangeProtocol ep = ExchangeProtocol.Command.builder()
-                .command(msg)
-                .session(session)
-                .listener(getSender())
-                .build();
-
-        exchange.tell(ep, getSelf());
     }
 }
