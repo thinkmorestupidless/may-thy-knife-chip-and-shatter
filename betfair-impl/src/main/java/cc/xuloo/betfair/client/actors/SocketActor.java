@@ -28,7 +28,6 @@ public class SocketActor extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(ConnectMessage.class, msg -> {
-                    log.info("connecting to betfair");
                     final ActorRef tcp = Tcp.get(getContext().getSystem()).manager();
                     InetSocketAddress remote = InetSocketAddress.createUnresolved(msg.getHost(), msg.getPort());
                     tcp.tell(TcpMessage.connect(remote), getSelf());

@@ -49,7 +49,7 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(BetfairProtocol.Start.class, this::start)
+                .match(BetfairServiceProtocol.Start.class, this::start)
                 .match(EventResultContainer.class, this::handleEventResultContainer)
                 .matchAny(o -> log.info("i don't know what to do with {}", o))
                 .build();
@@ -57,11 +57,11 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
 
     public Receive handlingMonitoredEvent() {
         return receiveBuilder()
-                .match(BetfairProtocol.EventMonitored.class, this::handleEventMonitored)
+                .match(BetfairServiceProtocol.EventMonitored.class, this::handleEventMonitored)
                 .build();
     }
 
-    private void start(BetfairProtocol.Start cmd) {
+    private void start(BetfairServiceProtocol.Start cmd) {
         log.debug("starting betfair worker");
 
         MarketFilter filter = MarketFilter.builder()
@@ -91,11 +91,11 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
             log.info("monitoring markets for {} events", target);
 
             result.forEach(eventResult ->
-                router.tell(new BetfairProtocol.MonitorEvent(eventResult.getEvent()), getSelf()));
+                router.tell(new BetfairServiceProtocol.MonitorEvent(eventResult.getEvent()), getSelf()));
         }
     }
 
-    private void handleEventMonitored(BetfairProtocol.EventMonitored msg) {
+    private void handleEventMonitored(BetfairServiceProtocol.EventMonitored msg) {
         marketIds.addAll(msg.getCatalogues().stream().map(catalogue -> catalogue.getMarketId()).collect(Collectors.toSet()));
         target--;
 

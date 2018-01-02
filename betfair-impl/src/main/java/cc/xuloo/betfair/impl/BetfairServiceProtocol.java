@@ -9,7 +9,7 @@ import lombok.Value;
 
 import java.util.List;
 
-public interface BetfairProtocol {
+public interface BetfairServiceProtocol {
 
     class Start {}
 

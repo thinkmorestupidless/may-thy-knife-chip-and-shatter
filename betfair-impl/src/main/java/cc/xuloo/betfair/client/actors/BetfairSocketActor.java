@@ -6,12 +6,14 @@ import akka.actor.Cancellable;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.io.Tcp;
 import akka.stream.javadsl.SourceQueue;
 import akka.util.ByteString;
 import cc.xuloo.betfair.stream.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import static com.opengamma.strata.collect.Unchecked.wrap;
@@ -20,8 +22,8 @@ public class BetfairSocketActor extends AbstractActor {
 
     private static final String CRLF = "\r\n";
 
-    public static Props props(ActorRef socket, ObjectMapper mapper) {
-        return Props.create(BetfairSocketActor.class, () -> new BetfairSocketActor(socket, mapper));
+    public static Props props(ActorRef socket, ObjectMapper mapper, ActorRef streamHandler) {
+        return Props.create(BetfairSocketActor.class, () -> new BetfairSocketActor(socket, mapper, streamHandler));
     }
 
     private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
@@ -30,13 +32,18 @@ public class BetfairSocketActor extends AbstractActor {
 
     private final ObjectMapper mapper;
 
+    private final ActorRef streamHandler;
+
     private SourceQueue<RequestMessage> stream;
 
     private Cancellable timer;
 
-    public BetfairSocketActor(ActorRef socket, ObjectMapper mapper) {
+    private StringBuilder buffer;
+
+    public BetfairSocketActor(ActorRef socket, ObjectMapper mapper, ActorRef streamHandler) {
         this.socket = socket;
         this.mapper = mapper;
+        this.streamHandler = streamHandler;
     }
 
     @Override
@@ -59,11 +66,41 @@ public class BetfairSocketActor extends AbstractActor {
 
     @Override
     public Receive createReceive() {
+        return disconnected();
+    }
+
+    public Receive disconnected() {
         return receiveBuilder()
                 .match(ConnectMessage.class, msg -> {
                     log.info("forwarding -> {} to {}", msg, socket);
-                    socket.forward(msg, getContext());
+                    getContext().become(connecting(getSender()));
+                    socket.tell(msg, getSelf());
                 })
+                .matchAny(o -> log.warning("i'm in state 'disconnected' and i don't know what to do with {}", o))
+                .build();
+    }
+
+    public Receive connecting(ActorRef listener) {
+        return receiveBuilder()
+                .match(Tcp.Connected.class, msg -> {
+                    log.info("TCP socket connection established to {}", msg.remoteAddress());
+                })
+                .match(ByteString.class, msg -> {
+                    ConnectionMessage cm = mapper.readValue(msg.utf8String(), ConnectionMessage.class);
+
+                    log.info("connection to betfair established");
+
+                    getContext().become(connected(listener));
+                    listener.tell(cm, getSelf());
+                })
+                .matchAny(o -> log.warning("i'm in state 'connecting' and i don't know what to do with {}", o))
+                .build();
+    }
+
+    public Receive connected(ActorRef listener) {
+        buffer = new StringBuilder();
+
+        return receiveBuilder()
                 .match(AuthenticationMessage.class, msg -> {
                     restartHeartbeatTimer();
                     toSocket(msg);
@@ -72,9 +109,123 @@ public class BetfairSocketActor extends AbstractActor {
                     restartHeartbeatTimer();
                 })
                 .match(StreamProtocol.class, this::toSocket)
-                .matchAny(o -> log.warning("i don't know what to do with {}", o))
+                .match(ByteString.class, bytes -> {
+                    String s = bytes.utf8String();
+                    log.info(s);
+                    buffer.append(s);
+
+                    if (buffer.toString().endsWith("\r\n")) {
+
+                        log.info("parsing {}", buffer.toString());
+
+                        ResponseMessage msg = null;
+
+                        try {
+                            msg = mapper.readValue(buffer.toString(), ResponseMessage.class);
+                        } catch (IOException e) {
+                            log.error("problem reading json value -> {} -> {}", buffer.toString(), e);
+                        }
+
+                        buffer = new StringBuilder();
+
+                        if (msg != null) {
+                if (msg instanceof StatusMessage) {
+                    log.info("Handling status message {}", msg);
+
+                    if (msg.getId() != null) {
+                        if (msg.getId().equals(1)) {
+                            log.info("stream succesfully authenticated");
+
+                            listener.tell(msg, getSelf());
+                        } else if (msg.getId().equals(2)) {
+                            restartHeartbeatTimer();
+                        }
+                    }
+
+                    listener.tell(msg, getSelf());
+                } else if (msg instanceof MarketChangeMessage) {
+                                log.info("handling market change message -> {}", msg);
+
+                                MarketChangeMessage mcm = (MarketChangeMessage) msg;
+
+                                if (mcm.getCt() == MarketChangeMessage.CtEnum.HEARTBEAT) {
+                                    restartHeartbeatTimer();
+                                } else if (mcm.getCt() == MarketChangeMessage.CtEnum.SUB_IMAGE) {
+                                    streamHandler.tell(mcm, getSelf());
+                                }
+                            } else {
+                                log.debug("ignoring message -> {}", msg);
+                            }
+                        }
+                    }
+                })
+                .matchAny(o -> log.warning("i'm in state 'connected' and i don't know what to do with {}", o))
                 .build();
     }
+
+//    @Override
+//    public Receive createReceive() {
+//        return receiveBuilder()
+//                .match(AuthenticationMessage.class, msg -> {
+//                    restartHeartbeatTimer();
+//                    toSocket(msg);
+//                })
+//                .match(StreamProtocol.HeartbeatReceived.class, msg -> {
+//                    restartHeartbeatTimer();
+//                })
+//                .match(StreamProtocol.class, this::toSocket)
+//                .match(ByteString.class, bytes -> {
+//                    String s = bytes.utf8String();
+//                    log.info(s);
+//                    buffer.append(s);
+//
+//                    if (buffer.toString().endsWith("\r\n")) {
+//
+//                        log.info("parsing {}", buffer.toString());
+//
+//                        ResponseMessage msg = null;
+//
+//                        try {
+//                            msg = mapper.readValue(buffer.toString(), ResponseMessage.class);
+//                        } catch (IOException e) {
+//                            log.error("problem reading json value -> {} -> {}", buffer.toString(), e);
+//                        }
+//
+//                        buffer = new StringBuilder();
+//
+//                        if (msg != null) {
+//                /*if (msg instanceof StatusMessage) {
+//                    log.info("Handling status message {}", msg);
+//
+//                    if (msg.getId() != null) {
+//                        if (msg.getId().equals(1)) {
+//                            log.info("stream succesfully authenticated");
+//
+//                            unstashAll();
+//                            getContext().become(loggedIn());
+//                        } else if (msg.getId().equals(2)) {
+//                            stream.tell(new StreamProtocol.HeartbeatReceived(), getSelf());
+//                        }
+//                    }
+//                } else */if (msg instanceof MarketChangeMessage) {
+//                                log.info("handling market change message -> {}", msg);
+//
+//                                MarketChangeMessage mcm = (MarketChangeMessage) msg;
+//
+//                                if (mcm.getCt() == MarketChangeMessage.CtEnum.HEARTBEAT) {
+//                                    restartHeartbeatTimer();
+//                                } else if (mcm.getCt() == MarketChangeMessage.CtEnum.SUB_IMAGE) {
+//                                    streamHandler.tell(mcm, getSelf());
+//                                }
+//                            } else {
+//                                log.debug("ignoring message -> {}", msg);
+//                            }
+//                        }
+//                    }
+//                })
+//                .matchAny(o -> log.warning("i don't know what to do with {}", o))
+//                .build();
+//    }
 
     public void restartHeartbeatTimer() {
         if (timer != null) {

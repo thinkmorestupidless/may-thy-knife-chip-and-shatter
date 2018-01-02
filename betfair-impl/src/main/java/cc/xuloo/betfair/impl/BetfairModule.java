@@ -7,6 +7,7 @@ import cc.xuloo.betfair.client.BetfairConnection;
 import cc.xuloo.betfair.client.ExchangeApi;
 import cc.xuloo.betfair.client.actors.*;
 import cc.xuloo.betfair.client.asynchttp.AsyncHttpBetfairConnection;
+import cc.xuloo.betfair.client.settings.BetfairSettings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.inject.AbstractModule;
@@ -48,14 +49,16 @@ public class BetfairModule extends AbstractModule implements ServiceGuiceSupport
         InetSocketAddress address = InetSocketAddress.createUnresolved(config.getString("betfair.stream.uri"), config.getInt("betfair.stream.port"));
         ActorRef socket = system.actorOf(SocketActor.props(), "socket-actor");
 
-        ActorRef betfairSocket = system.actorOf(BetfairSocketActor.props(socket, mapper), "betfair-socket");
+        ActorRef betfairSocket = system.actorOf(BetfairSocketActor.props(socket, mapper, streamHandler), "betfair-socket");
 
-        BetfairConnection connection = new AsyncHttpBetfairConnection(config);
+        BetfairSettings settings = BetfairSettings.fromConfig(config);
+
+        BetfairConnection connection = new AsyncHttpBetfairConnection(settings.getClient().getCredentials());
         ExchangeApi exchange = new ExchangeApi(connection);
 
-        ActorRef betfairStream = system.actorOf(BetfairStreamActor.props(betfairSocket), "betfair-stream");
+        ActorRef betfairStream = system.actorOf(BetfairStreamActor.props(mapper, betfairSocket), "betfair-stream");
         ActorRef betfairExchange = system.actorOf(BetfairExchangeActor.props(exchange), "betfair-exchange");
 
-        return system.actorOf(BetfairClientActor.props(config, mapper, betfairExchange, betfairStream, streamHandler, registry), "betfair-client");
+        return system.actorOf(BetfairClientActor.props(mapper, settings, betfairExchange, betfairStream, streamHandler), "betfair-client");
     }
 }
