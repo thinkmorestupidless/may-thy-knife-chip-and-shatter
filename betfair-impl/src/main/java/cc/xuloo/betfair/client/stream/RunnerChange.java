@@ -28,6 +28,7 @@ package cc.xuloo.betfair.client.stream;
 import cc.xuloo.betfair.client.exchange.entities.Runner;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
+import org.assertj.core.util.Lists;
 
 import java.util.Collections;
 import java.util.List;
@@ -187,7 +188,45 @@ public class RunnerChange   {
         Double spn = other.getSpn() == null ? getSpn() : other.getSpn();
         Double hc = other.getHc() == null ? getHc() : other.getHc();
 
+        List<List<Double>> batb = merge(getBatb(), other.getBatb(), 2);
+        List<List<Double>> batl = merge(getBatl(), other.getBatl(), 2);
+        List<List<Double>> bdatb = merge(getBdatb(), other.getBdatb(), 2);
+        List<List<Double>> bdatl = merge(getBdatl(), other.getBdatl(), 2);
+
+        List<List<Double>> atb = merge(getAtb(), other.getAtb(), 1);
+        List<List<Double>> atl = merge(getAtl(), other.getAtl(), 1);
+        List<List<Double>> spb = merge(getSpb(), other.getSpb(), 1);
+        List<List<Double>> spl = merge(getSpl(), other.getSpl(), 1);
+        List<List<Double>> trd = merge(getTrd(), other.getTrd(), 1);
+
         return new RunnerChange(tv, getBatb(), getSpb(), getBdatl(), getTrd(), spf, ltp, getAtb(), getSpl(), spn, getAtl(), getBatl(), getId(), getHc(), getBdatb());
+    }
+
+    public List<List<Double>> merge(List<List<Double>> a, List<List<Double>> b, int removeIndex) {
+        if (b == null) {
+            return a;
+        }
+
+        List<List<Double>> list = Lists.newArrayList();
+
+        for (List<Double> aEntry : a) {
+            List<Double> replacement = null;
+
+            for (List<Double> bEntry : b) {
+
+                if (aEntry.get(0).equals(bEntry.get(0))) {
+                    replacement = bEntry;
+                }
+            }
+
+            if (replacement == null) {
+                list.add(aEntry);
+            } else if (replacement.get(removeIndex) > 0.001) {
+                list.add(replacement);
+            }
+        }
+
+        return list;
     }
 }
 
