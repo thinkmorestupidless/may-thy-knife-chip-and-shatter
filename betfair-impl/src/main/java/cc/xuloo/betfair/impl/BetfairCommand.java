@@ -1,9 +1,9 @@
 package cc.xuloo.betfair.impl;
 
 import akka.Done;
-import cc.xuloo.betfair.aping.entities.Event;
-import cc.xuloo.betfair.aping.entities.MarketCatalogue;
-import cc.xuloo.betfair.stream.MarketChange;
+import cc.xuloo.betfair.client.exchange.entities.Event;
+import cc.xuloo.betfair.client.exchange.entities.MarketCatalogue;
+import cc.xuloo.betfair.client.stream.MarketChange;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntity;
@@ -44,6 +44,18 @@ public interface BetfairCommand extends Jsonable {
 
         @JsonCreator
         public AddMarketData(MarketChange data) {
+            this.data = data;
+        }
+    }
+
+    @Value
+    @JsonDeserialize
+    class MergeMarketData implements BetfairCommand, PersistentEntity.ReplyType<Done> {
+
+        private final MarketChange data;
+
+        @JsonCreator
+        public MergeMarketData(MarketChange data) {
             this.data = data;
         }
     }

@@ -1,8 +1,8 @@
 package cc.xuloo.betfair.impl;
 
-import cc.xuloo.betfair.aping.entities.Event;
-import cc.xuloo.betfair.aping.entities.MarketCatalogue;
-import cc.xuloo.betfair.stream.MarketChange;
+import cc.xuloo.betfair.client.exchange.entities.Event;
+import cc.xuloo.betfair.client.exchange.entities.MarketCatalogue;
+import cc.xuloo.betfair.client.stream.MarketChange;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.lightbend.lagom.serialization.CompressedJsonable;
@@ -49,6 +49,20 @@ public class BetfairState implements CompressedJsonable {
         for (MarketState state : this.markets) {
             if (state.getCatalogue().getMarketId().equals(data.getId())) {
                 markets.add(state.withData(data));
+            } else {
+                markets.add(state);
+            }
+        }
+
+        return new BetfairState(event, markets);
+    }
+
+    public BetfairState withMergedMarketData(MarketChange data) {
+        Set<MarketState> markets = Sets.newHashSet();
+
+        for (MarketState state : this.markets) {
+            if (state.getCatalogue().getMarketId().equals(data.getId())) {
+                markets.add(state.withData(state.getData().merge(data)));
             } else {
                 markets.add(state);
             }

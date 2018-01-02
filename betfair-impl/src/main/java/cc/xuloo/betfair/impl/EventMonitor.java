@@ -6,22 +6,19 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import cc.xuloo.betfair.aping.containers.ListMarketCatalogueContainer;
-import cc.xuloo.betfair.aping.entities.Event;
-import cc.xuloo.betfair.aping.entities.MarketCatalogue;
-import cc.xuloo.betfair.aping.entities.MarketFilter;
-import cc.xuloo.betfair.aping.enums.MarketProjection;
-import cc.xuloo.betfair.aping.enums.MarketSort;
-import cc.xuloo.betfair.client.actors.ExchangeProtocol;
+import cc.xuloo.betfair.client.exchange.containers.ListMarketCatalogueContainer;
+import cc.xuloo.betfair.client.exchange.entities.Event;
+import cc.xuloo.betfair.client.exchange.entities.MarketCatalogue;
+import cc.xuloo.betfair.client.exchange.entities.MarketFilter;
+import cc.xuloo.betfair.client.exchange.enums.MarketProjection;
+import cc.xuloo.betfair.client.exchange.enums.MarketSort;
+import cc.xuloo.betfair.client.ExchangeProtocol;
 import cc.xuloo.utils.CompletionStageUtils;
-import com.google.common.collect.Sets;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import org.assertj.core.util.Lists;
 
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 
 public class EventMonitor extends AbstractActor {
 
@@ -47,7 +44,7 @@ public class EventMonitor extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(BetfairProtocol.MonitorEvent.class, this::monitorEvent)
+                .match(BetfairServiceProtocol.MonitorEvent.class, this::monitorEvent)
                 .build();
     }
 
@@ -77,14 +74,14 @@ public class EventMonitor extends AbstractActor {
                                     log.warning("failed to complete all markets -> {}", throwable);
                                     return Done.getInstance();
                                 }).thenAccept(done -> {
-                                    listener.tell(new BetfairProtocol.EventMonitored(catalogues), getSelf());
+                                    listener.tell(new BetfairServiceProtocol.EventMonitored(catalogues), getSelf());
                                 });
                     }
                 })
                 .build();
     }
 
-    public void monitorEvent(BetfairProtocol.MonitorEvent cmd) {
+    public void monitorEvent(BetfairServiceProtocol.MonitorEvent cmd) {
         log.info("monitoring event -> {}", getSender());
 
         listener = getSender();
