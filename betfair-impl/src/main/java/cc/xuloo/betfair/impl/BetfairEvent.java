@@ -52,6 +52,18 @@ public interface BetfairEvent extends Jsonable, AggregateEvent<BetfairEvent> {
         }
     }
 
+    @Value
+    @JsonDeserialize
+    class MarketDataMerged implements BetfairEvent {
+
+        private final MarketChange data;
+
+        @JsonCreator
+        public MarketDataMerged(MarketChange data) {
+            this.data = data;
+        }
+    }
+
     @Override
     default AggregateEventTagger<BetfairEvent> aggregateTag() {
         return TAG;

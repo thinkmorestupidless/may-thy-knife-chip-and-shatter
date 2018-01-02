@@ -40,9 +40,13 @@ public class DefaultStreamMessageHandler extends AbstractActor {
                             if (marketChange.getImg() != null && marketChange.getImg()) {
                                 log.info("Adding market data for {}", marketChange.getId());
 
-                                entity.ask(new BetfairCommand.AddMarketData(marketChange));
+                                entity.ask(new BetfairCommand.AddMarketData(marketChange))
+                                .thenAccept(done -> log.info("market data added"));
                             } else {
                                 log.info("Merging market data for {}", marketChange.getId());
+
+                                entity.ask(new BetfairCommand.MergeMarketData(marketChange))
+                                .thenAccept(done -> log.info("market data merged"));
                             }
                         });
                     }

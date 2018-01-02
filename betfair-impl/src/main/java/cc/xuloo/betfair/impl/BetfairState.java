@@ -56,4 +56,18 @@ public class BetfairState implements CompressedJsonable {
 
         return new BetfairState(event, markets);
     }
+
+    public BetfairState withMergedMarketData(MarketChange data) {
+        Set<MarketState> markets = Sets.newHashSet();
+
+        for (MarketState state : this.markets) {
+            if (state.getCatalogue().getMarketId().equals(data.getId())) {
+                markets.add(state.withData(state.getData().merge(data)));
+            } else {
+                markets.add(state);
+            }
+        }
+
+        return new BetfairState(event, markets);
+    }
 }

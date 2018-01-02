@@ -47,4 +47,16 @@ public interface BetfairCommand extends Jsonable {
             this.data = data;
         }
     }
+
+    @Value
+    @JsonDeserialize
+    class MergeMarketData implements BetfairCommand, PersistentEntity.ReplyType<Done> {
+
+        private final MarketChange data;
+
+        @JsonCreator
+        public MergeMarketData(MarketChange data) {
+            this.data = data;
+        }
+    }
  }

@@ -25,9 +25,11 @@
 
 package cc.xuloo.betfair.client.stream;
 
+import cc.xuloo.betfair.client.exchange.entities.Runner;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 
+import java.util.Collections;
 import java.util.List;
 
 
@@ -36,6 +38,25 @@ import java.util.List;
  */
 @Value
 public class RunnerChange   {
+
+    public static RunnerChange empty() {
+        return new RunnerChange(
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                null,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                null,
+                null,
+                Collections.emptyList());
+    }
 
     /**
     * The total amount matched. This value is truncated at 2dp.
@@ -157,6 +178,16 @@ public class RunnerChange   {
         this.id = id;
         this.hc = hc;
         this.bdatb = bdatb;
+    }
+
+    public RunnerChange merge(RunnerChange other) {
+        Double tv = other.getTv() == null ? getTv() : other.getTv();
+        Double spf = other.getSpf() == null ? getSpf() : other.getSpf();
+        Double ltp = other.getLtp() == null ? getLtp() : other.getLtp();
+        Double spn = other.getSpn() == null ? getSpn() : other.getSpn();
+        Double hc = other.getHc() == null ? getHc() : other.getHc();
+
+        return new RunnerChange(tv, getBatb(), getSpb(), getBdatl(), getTrd(), spf, ltp, getAtb(), getSpl(), spn, getAtl(), getBatl(), getId(), getHc(), getBdatb());
     }
 }
 

@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -37,30 +38,46 @@ import java.util.List;
 @Value
 public class MarketChange {
 
-  private final List<RunnerChange> rc;
+    private final List<RunnerChange> rc;
 
-  private final Boolean img;
+    private final Boolean img;
 
-  private final Double tv;
+    private final Double tv;
 
-  private final Boolean con;
+    private final Boolean con;
 
-  private final MarketDefinition marketDefinition;
+    private final MarketDefinition marketDefinition;
 
-  private final String id;
+    private final String id;
 
-  public MarketChange(@JsonProperty("rc") List<RunnerChange> rc,
+    public MarketChange(@JsonProperty("rc") List<RunnerChange> rc,
                       @JsonProperty("img") Boolean img,
                       @JsonProperty("tv") Double tv,
                       @JsonProperty("con") Boolean con,
                       @JsonProperty("marketDefinition") MarketDefinition marketDefinition,
                       @JsonProperty("id") String id) {
-    this.rc = rc;
-    this.img = img;
-    this.tv = tv;
-    this.con = con;
-    this.marketDefinition = marketDefinition;
-    this.id = id;
-  }
+        this.rc = rc;
+        this.img = img;
+        this.tv = tv;
+        this.con = con;
+        this.marketDefinition = marketDefinition;
+        this.id = id;
+    }
+
+    public MarketChange merge(MarketChange other) {
+
+        List<RunnerChange> rc = getRc().stream()
+                                        .map(runner ->
+                                                runner.merge(other.getRc()
+                                                        .stream()
+                                                        .filter(r -> r.getId().equals(runner.getId()))
+                                                        .findFirst()
+                                                        .orElseGet(() -> RunnerChange.empty())))
+                                        .collect(Collectors.toList());
+
+        Double tv = other.getTv() == null ? getTv() : other.getTv();
+
+        return new MarketChange(rc, getImg(), tv, false, getMarketDefinition(), getId());
+    }
 }
 
