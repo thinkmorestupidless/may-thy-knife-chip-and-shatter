@@ -55,6 +55,10 @@ public class BetfairExchangeActor extends AbstractActor {
                         log.warning("problem listing events: {}", t);
                         return null;
                     }).thenAccept(response -> {
+                        if (response.getError() != null) {
+                            log.warning("error listing events -> ", response.getError());
+                        }
+
                         cmd.getListener().tell(response, getSelf());
                     });
         } else if (protocol instanceof ExchangeProtocol.ListMarketCatalogues) {
@@ -67,8 +71,12 @@ public class BetfairExchangeActor extends AbstractActor {
                         log.error("problem listing market catalogues -> {}", t);
                         return null;
                     })
-                    .thenAccept(result -> {
-                        cmd.getListener().tell(result, getSelf());
+                    .thenAccept(response -> {
+                        if (response.getError() != null) {
+                            log.warning("error listing market catalogues -> ", response.getError());
+                        }
+
+                        cmd.getListener().tell(response, getSelf());
                     });
         }
     }

@@ -1,23 +1,27 @@
 package cc.xuloo.betfair.impl;
 
+import akka.Done;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import cc.xuloo.betfair.aping.containers.ListMarketCatalogueContainer;
+import cc.xuloo.betfair.aping.entities.Event;
 import cc.xuloo.betfair.aping.entities.MarketCatalogue;
 import cc.xuloo.betfair.aping.entities.MarketFilter;
 import cc.xuloo.betfair.aping.enums.MarketProjection;
 import cc.xuloo.betfair.aping.enums.MarketSort;
 import cc.xuloo.betfair.client.actors.ExchangeProtocol;
-import cc.xuloo.betfair.stream.MarketSubscriptionMessage;
+import cc.xuloo.utils.CompletionStageUtils;
 import com.google.common.collect.Sets;
-import com.lightbend.lagom.javadsl.persistence.PersistentEntityRef;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
+import org.assertj.core.util.Lists;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 public class EventMonitor extends AbstractActor {
 
@@ -30,6 +34,10 @@ public class EventMonitor extends AbstractActor {
     private final ActorRef betfair;
 
     private final PersistentEntityRegistry registry;
+
+    private List<MarketCatalogue> catalogues;
+
+    private ActorRef listener;
 
     public EventMonitor(ActorRef betfair, PersistentEntityRegistry registry) {
         this.betfair = betfair;
@@ -49,53 +57,61 @@ public class EventMonitor extends AbstractActor {
                     if (container.getError() != null) {
                         log.warning("error listing market catalogues -> {}", container.getError());
                     } else {
-                        List<MarketCatalogue> catalogues = container.getResult();
+                        catalogues = container.getResult();
 
-//                        if (catalogues.size() > 0) {
-//                            subscribeToMarket(catalogues.get(0), eventId);
-//                        }
+//                        List<CompletionStage<Done>> stages = catalogues.stream()
+//                                .map(catalogue -> subscribeToMarket(catalogue, eventId))
+//                                .collect(Collectors.toList());
 
-                        catalogues.forEach(catalogue -> subscribeToMarket(catalogue, eventId));
+//                        List<MarketCatalogue> sorted = catalogues.stream().sorted((a, b) -> b.getTotalMatched().compareTo(a.getTotalMatched())).collect(Collectors.toList());
+
+                        CompletionStage<Done> operation = catalogues.stream()
+                                .sorted((a, b) -> b.getTotalMatched().compareTo(a.getTotalMatched()))
+                                .map(c -> subscribeToMarket(c, eventId))
+                                .findFirst().get();
+
+                        List<CompletionStage<Done>> stages = Lists.newArrayList(operation);
+
+                                CompletionStageUtils.doAll(stages)
+                                .exceptionally(throwable -> {
+                                    log.warning("failed to complete all markets -> {}", throwable);
+                                    return Done.getInstance();
+                                }).thenAccept(done -> {
+                                    listener.tell(new BetfairProtocol.EventMonitored(catalogues), getSelf());
+                                });
                     }
                 })
                 .build();
     }
 
     public void monitorEvent(BetfairProtocol.MonitorEvent cmd) {
-        log.info("monitoring event -> {}", cmd.getEvent());
+        log.info("monitoring event -> {}", getSender());
 
-        MarketFilter filter = MarketFilter.builder()
-                  .eventId(cmd.getEvent().getId())
-                  .build();
+        listener = getSender();
+        Event event = cmd.getEvent();
 
-        Set<MarketProjection> projections = Sets.newHashSet(MarketProjection.COMPETITION, MarketProjection.RUNNER_DESCRIPTION);
-        MarketSort sort = MarketSort.MAXIMUM_TRADED;
+        registry.refFor(BetfairEntity.class, event.getId())
+                .ask(new BetfairCommand.AddFixture(event))
+                .thenAccept(done -> {
+                    MarketFilter filter = MarketFilter.builder()
+                            .eventId(cmd.getEvent().getId())
+                            .build();
 
-        ExchangeProtocol protocol = ExchangeProtocol.ListMarketCatalogues.builder()
-                .filter(filter)
-                .marketProjection(MarketProjection.RUNNER_DESCRIPTION)
-                .sort(MarketSort.MAXIMUM_TRADED)
-                .maxResults(100)
-                .build();
+                    ExchangeProtocol protocol = ExchangeProtocol.ListMarketCatalogues.builder()
+                            .filter(filter)
+                            .marketProjection(MarketProjection.RUNNER_DESCRIPTION)
+                            .sort(MarketSort.MAXIMUM_TRADED)
+                            .maxResults(100)
+                            .build();
 
-        betfair.tell(protocol, getSelf());
+                    betfair.tell(protocol, getSelf());
 
-        getContext().become(waitingForCatalogue(cmd.getEvent().getId()));
+                    getContext().become(waitingForCatalogue(cmd.getEvent().getId()));
+                });
     }
 
-    public void subscribeToMarket(MarketCatalogue catalogue, String eventId) {
-        PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, eventId);
-        entity.ask(new BetfairCommand.AddMarketCatalogue(catalogue))
-        .thenAccept(done -> {
-            cc.xuloo.betfair.stream.MarketFilter streamFilter = cc.xuloo.betfair.stream.MarketFilter.builder()
-                    .marketId(catalogue.getMarketId())
-                    .build();
-
-            MarketSubscriptionMessage msg = MarketSubscriptionMessage.builder()
-                    .marketFilter(streamFilter)
-                    .build();
-
-            betfair.tell(msg, getSelf());
-        });
+    public CompletionStage<Done> subscribeToMarket(MarketCatalogue catalogue, String eventId) {
+        return registry.refFor(BetfairEntity.class, eventId)
+                       .ask(new BetfairCommand.AddMarketCatalogue(catalogue));
     }
 }

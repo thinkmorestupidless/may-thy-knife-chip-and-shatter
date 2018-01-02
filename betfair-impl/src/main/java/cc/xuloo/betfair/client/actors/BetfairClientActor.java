@@ -8,16 +8,12 @@ import akka.event.LoggingAdapter;
 import akka.util.ByteString;
 import cc.xuloo.betfair.client.BetfairSession;
 import cc.xuloo.betfair.client.LoginResponse;
-import cc.xuloo.betfair.impl.BetfairCommand;
-import cc.xuloo.betfair.impl.BetfairEntity;
 import cc.xuloo.betfair.stream.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lightbend.lagom.javadsl.persistence.PersistentEntityRef;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.typesafe.config.Config;
 
 import java.io.IOException;
-import java.util.List;
 
 public class BetfairClientActor extends AbstractActorWithStash {
 
@@ -35,7 +31,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
 
     private final ActorRef stream;
 
-    private final ActorRef listener;
+    private final ActorRef streamHandler;
 
     private final PersistentEntityRegistry registry;
 
@@ -43,23 +39,23 @@ public class BetfairClientActor extends AbstractActorWithStash {
 
     private StringBuilder buffer = new StringBuilder();
 
-    public BetfairClientActor(Config config, ObjectMapper mapper, ActorRef exchange, ActorRef stream, ActorRef listener, PersistentEntityRegistry registry) {
+    public BetfairClientActor(Config config, ObjectMapper mapper, ActorRef exchange, ActorRef stream, ActorRef streamHandler, PersistentEntityRegistry registry) {
         this.config = config;
         this.mapper = mapper;
         this.exchange = exchange;
         this.stream = stream;
-        this.listener = listener;
+        this.streamHandler = streamHandler;
         this.registry = registry;
     }
 
     @Override
     public void preStart() throws Exception {
-        log.debug("starting up the betfair client");
+        log.info("starting up the betfair client");
 
         if (config.getString("mtkcas.betfair.monitor").equals("auto-start")) {
-            log.debug("auto-starting betfair client - logging in");
+            log.info("auto-starting betfair client - logging in");
 
-            exchange.tell(new ExchangeProtocol.Login(), getSelf());
+            getSelf().tell(new BetfairClientProtocol.ConnectExchange(), getSelf());
         }
     }
 
@@ -76,27 +72,91 @@ public class BetfairClientActor extends AbstractActorWithStash {
 
     private Receive loggedOut() {
         return receiveBuilder()
-                .match(ExchangeProtocol.Login.class, msg -> {
-                    exchange.tell(msg, getSelf());
+                .match(BetfairClientProtocol.ConnectExchange.class, cmd -> {
+                    log.info("connecting exchange");
+
+                    getContext().become(connectingExchange());
+                    exchange.tell(new ExchangeProtocol.Login(), getSelf());
                 })
+                .match(ExchangeProtocol.class, cmd -> {
+                    stash();
+                })
+                .matchAny(o -> log.info("in state 'loggedOut' - unable to handle {}", o))
+                .build();
+    }
+
+    private Receive connectingExchange() {
+        return receiveBuilder()
                 .match(LoginResponse.class, msg -> {
                     if (msg.getLoginStatus().equals("SUCCESS")) {
-                        log.debug("logged in to Betfair successfully");
+                        log.info("logged in to Betfair successfully");
 
                         session = BetfairSession.loggedIn(msg.getSessionToken(), config.getString("betfair.applicationKey"));
 
-                        stream.tell(ConnectMessage.builder()
+                        getContext().become(connectingStream());
+
+                        getSelf().tell(new BetfairClientProtocol.ConnectStream(), getSelf());
+                    } else {
+                        log.warning("failed to login successfully -> {}", msg.toString());
+                        getContext().become(loggedOut());
+                    }
+                })
+                .match(ExchangeProtocol.class, cmd -> {
+                    stash();
+                })
+                .matchAny(o -> log.info("in state 'connectingExchange' - unable to handle {}", o))
+                .build();
+    }
+
+    private Receive connectingStream() {
+        return receiveBuilder()
+                .match(BetfairClientProtocol.ConnectStream.class, cmd -> {
+                    getContext().become(connectingStream());
+
+                    stream.tell(ConnectMessage.builder()
                                 .host(config.getString("betfair.stream.uri"))
                                 .port(config.getInt("betfair.stream.port"))
                                 .id(0)
                                 .build(), getSelf());
+                })
+                .match(ByteString.class, msg -> {
+                    ConnectionMessage cm = mapper.readValue(msg.utf8String(), ConnectionMessage.class);
+
+                    log.info("connected to stream -> {}", cm);
+
+                    getContext().become(authenticatingStream());
+
+                    stream.tell(AuthenticationMessage.builder()
+                            .id(1)
+                            .appKey(session.applicationKey())
+                            .session(session.sessionToken())
+                            .build(), getSelf());
+                })
+                .match(ExchangeProtocol.class, cmd -> {
+                    stash();
+                })
+                .matchAny(o -> log.info("in state 'connectingStream' - unable to handle {}", o))
+                .build();
+    }
+
+    private Receive authenticatingStream() {
+        return receiveBuilder()
+                .match(ByteString.class, msg -> {
+                    StatusMessage sm = mapper.readValue(msg.utf8String(), StatusMessage.class);
+
+                    if (sm.getId() != null && sm.getId().equals(1)) {
+                        log.info("stream succesfully authenticated");
+
+                        getContext().become(loggedIn());
+                        unstashAll();
                     } else {
-                        log.warning("failed to login successfully");
+                        log.info("in state 'authenticatingStream but received a StatusMessage with id {} -> {}", sm.getId(), msg);
                     }
                 })
-                .match(ByteString.class, this::handleByteString)
-                .match(ExchangeProtocol.class, x -> stash())
-                .matchAny(o -> log.warning("i don't know what to do with {}", o))
+                .match(ExchangeProtocol.class, cmd -> {
+                    stash();
+                })
+                .matchAny(o -> log.info("in state 'authenticatingStream' - unable to handle {}", o))
                 .build();
     }
 
@@ -118,16 +178,15 @@ public class BetfairClientActor extends AbstractActorWithStash {
 
     }
 
-    private void buffer(ByteString bytes) {
-
-    }
-
     public void handleByteString(ByteString bytes) {
 
         String s = bytes.utf8String();
+        log.info(s);
         buffer.append(s);
 
         if (buffer.toString().endsWith("\r\n")) {
+
+            log.info("parsing {}", buffer.toString());
 
             ResponseMessage msg = null;
 
@@ -140,23 +199,18 @@ public class BetfairClientActor extends AbstractActorWithStash {
             buffer = new StringBuilder();
 
             if (msg != null) {
-                if (msg instanceof ConnectionMessage) {
-                    log.debug("handling connection message");
+                if (msg instanceof StatusMessage) {
+                    log.info("Handling status message {}", msg);
 
-                    stream.tell(AuthenticationMessage.builder()
-                            .id(1)
-                            .appKey(session.applicationKey())
-                            .session(session.sessionToken())
-                            .build(), getSelf());
+                    if (msg.getId() != null) {
+                        if (msg.getId().equals(1)) {
+                            log.info("stream succesfully authenticated");
 
-                } else if (msg instanceof StatusMessage) {
-                    log.debug("Handling status message {}", msg);
-
-                    if (msg.getId() != null && msg.getId().equals(1)) {
-                        log.debug("stream succesfully authenticated");
-
-                        unstashAll();
-                        getContext().become(loggedIn());
+                            unstashAll();
+                            getContext().become(loggedIn());
+                        } else if (msg.getId().equals(2)) {
+                            stream.tell(new StreamProtocol.HeartbeatReceived(), getSelf());
+                        }
                     }
                 } else if (msg instanceof MarketChangeMessage) {
                     log.info("handling market change message -> {}", msg);
@@ -166,26 +220,10 @@ public class BetfairClientActor extends AbstractActorWithStash {
                     if (mcm.getCt() == MarketChangeMessage.CtEnum.HEARTBEAT) {
                         stream.tell(new StreamProtocol.HeartbeatReceived(), getSelf());
                     } else if (mcm.getCt() == MarketChangeMessage.CtEnum.SUB_IMAGE) {
-
-                        if (mcm.getMc() != null) {
-                            List<MarketChange> marketChanges = mcm.getMc();
-
-                            marketChanges.forEach(marketChange -> {
-                                PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, marketChange.getMarketDefinition().getEventId());
-
-
-                                if (marketChange.getImg() != null && marketChange.getImg()) {
-                                    log.info("Adding market data for {}", marketChange.getId());
-
-                                    entity.ask(new BetfairCommand.AddMarketData(marketChange));
-                                } else {
-                                    log.info("Merging market data for {}", marketChange.getId());
-                                }
-                            });
-                        }
+                        streamHandler.tell(mcm, getSelf());
                     }
                 } else {
-                    log.warning("i don't know what to do with -> {}", msg);
+                    log.debug("ignoring message -> {}", msg);
                 }
             }
         }

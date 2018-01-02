@@ -43,7 +43,7 @@ public class BetfairModule extends AbstractModule implements ServiceGuiceSupport
 
         ObjectMapper mapper = new ObjectMapper().registerModule(new JodaModule());
 
-        ActorRef socketListener = system.actorOf(SocketListeningActor.props(registry), "socket-listener");
+        ActorRef streamHandler = system.actorOf(DefaultStreamMessageHandler.props(registry), "stream-handler");
 
         InetSocketAddress address = InetSocketAddress.createUnresolved(config.getString("betfair.stream.uri"), config.getInt("betfair.stream.port"));
         ActorRef socket = system.actorOf(SocketActor.props(), "socket-actor");
@@ -56,6 +56,6 @@ public class BetfairModule extends AbstractModule implements ServiceGuiceSupport
         ActorRef betfairStream = system.actorOf(BetfairStreamActor.props(betfairSocket), "betfair-stream");
         ActorRef betfairExchange = system.actorOf(BetfairExchangeActor.props(exchange), "betfair-exchange");
 
-        return system.actorOf(BetfairClientActor.props(config, mapper, betfairExchange, betfairStream, socketListener, registry), "betfair-client");
+        return system.actorOf(BetfairClientActor.props(config, mapper, betfairExchange, betfairStream, streamHandler, registry), "betfair-client");
     }
 }

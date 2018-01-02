@@ -24,7 +24,10 @@ public class BetfairStreamActor extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(StreamProtocol.class, msg -> socket.forward(msg, getContext()))
+                .match(StreamProtocol.class, msg -> {
+                    log.info("sending -> {} to {}", msg, socket);
+                    socket.forward(msg, getContext());
+                })
                 .matchAny(o -> log.warning("i don't know what to do with {}", o))
                 .build();
     }

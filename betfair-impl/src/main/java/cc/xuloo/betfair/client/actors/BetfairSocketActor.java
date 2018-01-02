@@ -61,6 +61,7 @@ public class BetfairSocketActor extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(ConnectMessage.class, msg -> {
+                    log.info("forwarding -> {} to {}", msg, socket);
                     socket.forward(msg, getContext());
                 })
                 .match(AuthenticationMessage.class, msg -> {
@@ -91,7 +92,7 @@ public class BetfairSocketActor extends AbstractActor {
     }
 
     public void toSocket(StreamProtocol msg) {
-        log.debug("sending message {}", msg);
+        log.info("sending message {}", msg);
 
         ByteString bs = wrap(() -> ByteString.fromString(mapper.writeValueAsString(msg) + CRLF));
         socket.tell(bs, getSelf());

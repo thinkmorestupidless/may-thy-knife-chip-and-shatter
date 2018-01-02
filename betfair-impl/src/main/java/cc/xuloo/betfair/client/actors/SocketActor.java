@@ -28,6 +28,7 @@ public class SocketActor extends AbstractActor {
     public Receive createReceive() {
         return receiveBuilder()
                 .match(ConnectMessage.class, msg -> {
+                    log.info("connecting to betfair");
                     final ActorRef tcp = Tcp.get(getContext().getSystem()).manager();
                     InetSocketAddress remote = InetSocketAddress.createUnresolved(msg.getHost(), msg.getPort());
                     tcp.tell(TcpMessage.connect(remote), getSelf());
@@ -54,12 +55,14 @@ public class SocketActor extends AbstractActor {
     private Receive connected(final ActorRef connection, final ActorRef listener) {
         return receiveBuilder()
                 .match(ByteString.class, msg -> {
+                    log.info("sending message -> {}", msg);
                     connection.tell(TcpMessage.write((ByteString) msg), getSelf());
                 })
                 .match(Tcp.CommandFailed.class, msg -> {
                     // OS kernel socket buffer was full
                 })
                 .match(Tcp.Received.class, msg -> {
+                    log.info("received -> {} -> {}", msg.data(), listener);
                     listener.tell(msg.data(), getSelf());
                 })
                 .matchEquals("close", msg -> {

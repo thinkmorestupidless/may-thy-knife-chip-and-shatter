@@ -5,19 +5,20 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.routing.SmallestMailboxPool;
+import akka.routing.RoundRobinPool;
 import cc.xuloo.betfair.aping.containers.EventResultContainer;
-import cc.xuloo.betfair.aping.entities.Event;
 import cc.xuloo.betfair.aping.entities.EventResult;
 import cc.xuloo.betfair.aping.entities.MarketFilter;
 import cc.xuloo.betfair.client.actors.ExchangeProtocol;
+import cc.xuloo.betfair.stream.MarketSubscriptionMessage;
 import com.google.common.collect.Sets;
-import com.lightbend.lagom.javadsl.persistence.PersistentEntityRef;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.typesafe.config.Config;
 import play.libs.akka.InjectedActorSupport;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class BetfairWorker extends AbstractActor implements InjectedActorSupport {
 
@@ -33,6 +34,12 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
 
     private final PersistentEntityRegistry registry;
 
+    private ActorRef router;
+
+    private int target;
+
+    private Set<String> marketIds;
+
     public BetfairWorker(Config config, ActorRef betfair, PersistentEntityRegistry registry) {
         this.config = config;
         this.betfair = betfair;
@@ -45,6 +52,12 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
                 .match(BetfairProtocol.Start.class, this::start)
                 .match(EventResultContainer.class, this::handleEventResultContainer)
                 .matchAny(o -> log.info("i don't know what to do with {}", o))
+                .build();
+    }
+
+    public Receive handlingMonitoredEvent() {
+        return receiveBuilder()
+                .match(BetfairProtocol.EventMonitored.class, this::handleEventMonitored)
                 .build();
     }
 
@@ -69,20 +82,39 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
 
             List<EventResult> result = container.getResult();
 
-//            if (result.size() > 0) {
-//                EventResult first = result.get(0);
-//                handleEvent(first.getEvent());
-//            }
-            ActorRef router = getContext().actorOf(new SmallestMailboxPool(10).props(EventMonitor.props(betfair, registry)));
+            target = result.size();
+            router = getContext().actorOf(new RoundRobinPool(target).props(EventMonitor.props(betfair, registry)));
+            marketIds = Sets.newHashSet();
 
-            result.forEach(eventResult -> {
-                Event event = eventResult.getEvent();
-                PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, event.getId());
-                entity.ask(new BetfairCommand.AddFixture(event))
-                        .thenAccept(done -> {
-                            router.tell(new BetfairProtocol.MonitorEvent(event), getSelf());
-                        });
-            });
+            getContext().become(handlingMonitoredEvent());
+
+            log.info("monitoring markets for {} events", target);
+
+            result.forEach(eventResult ->
+                router.tell(new BetfairProtocol.MonitorEvent(eventResult.getEvent()), getSelf()));
+        }
+    }
+
+    private void handleEventMonitored(BetfairProtocol.EventMonitored msg) {
+        marketIds.addAll(msg.getCatalogues().stream().map(catalogue -> catalogue.getMarketId()).collect(Collectors.toSet()));
+        target--;
+
+        log.info("waiting for {} catalogues", target);
+
+        if (target == 0) {
+            log.info("subscribing to {} markets", marketIds.size());
+
+            Set<String> limited = marketIds.stream().limit(200).collect(Collectors.toSet());
+
+            cc.xuloo.betfair.stream.MarketFilter streamFilter = cc.xuloo.betfair.stream.MarketFilter.builder()
+                    .marketIds(limited)
+                    .build();
+
+            MarketSubscriptionMessage msm = MarketSubscriptionMessage.builder()
+                    .marketFilter(streamFilter)
+                    .build();
+
+            betfair.tell(msm, getSelf());
         }
     }
 }
