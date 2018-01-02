@@ -6,11 +6,11 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.routing.RoundRobinPool;
-import cc.xuloo.betfair.aping.containers.EventResultContainer;
-import cc.xuloo.betfair.aping.entities.EventResult;
-import cc.xuloo.betfair.aping.entities.MarketFilter;
-import cc.xuloo.betfair.client.actors.ExchangeProtocol;
-import cc.xuloo.betfair.stream.MarketSubscriptionMessage;
+import cc.xuloo.betfair.client.exchange.containers.EventResultContainer;
+import cc.xuloo.betfair.client.exchange.entities.EventResult;
+import cc.xuloo.betfair.client.exchange.entities.MarketFilter;
+import cc.xuloo.betfair.client.ExchangeProtocol;
+import cc.xuloo.betfair.client.stream.MarketSubscriptionMessage;
 import com.google.common.collect.Sets;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.typesafe.config.Config;
@@ -106,7 +106,7 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
 
             Set<String> limited = marketIds.stream().limit(200).collect(Collectors.toSet());
 
-            cc.xuloo.betfair.stream.MarketFilter streamFilter = cc.xuloo.betfair.stream.MarketFilter.builder()
+            cc.xuloo.betfair.client.stream.MarketFilter streamFilter = cc.xuloo.betfair.client.stream.MarketFilter.builder()
                     .marketIds(limited)
                     .build();
 
