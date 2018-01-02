@@ -13,8 +13,6 @@ import java.util.Set;
 
 public interface ExchangeProtocol {
 
-    class Login {}
-
     @Value
     @Builder
     class Command implements ExchangeProtocol {

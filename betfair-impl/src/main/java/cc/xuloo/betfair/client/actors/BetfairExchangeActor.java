@@ -30,14 +30,6 @@ public class BetfairExchangeActor extends AbstractActor {
         return disconnected();
     }
 
-//    public void handleLogin(ExchangeProtocol.Login cmd) {
-//        log.info("logging in to Exchange");
-//
-//        listener = getSender();
-//
-//        api.login().thenAccept(response -> listener.tell(response, getSelf()));
-//    }
-
     public Receive disconnected() {
         return receiveBuilder()
                 .match(ExchangeCommand.Connect.class, cmd -> {
@@ -82,6 +74,7 @@ public class BetfairExchangeActor extends AbstractActor {
 
                             cmd.getListener().tell(response, getSelf());
                         });
+
                     } else if (protocol instanceof ExchangeProtocol.ListMarketCatalogues) {
                         log.debug("listing market catalogues");
 

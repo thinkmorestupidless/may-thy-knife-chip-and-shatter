@@ -129,21 +129,22 @@ public class BetfairSocketActor extends AbstractActor {
                         buffer = new StringBuilder();
 
                         if (msg != null) {
-                if (msg instanceof StatusMessage) {
-                    log.info("Handling status message {}", msg);
+                            if (msg instanceof StatusMessage) {
+                                log.info("Handling status message {}", msg);
 
-                    if (msg.getId() != null) {
-                        if (msg.getId().equals(1)) {
-                            log.info("stream succesfully authenticated");
+                                if (msg.getId() != null) {
+                                    if (msg.getId().equals(1)) {
+                                        log.info("stream succesfully authenticated");
 
-                            listener.tell(msg, getSelf());
-                        } else if (msg.getId().equals(2)) {
-                            restartHeartbeatTimer();
-                        }
-                    }
+                                        listener.tell(msg, getSelf());
+                                    } else if (msg.getId().equals(2)) {
+                                        restartHeartbeatTimer();
+                                    }
+                                }
 
-                    listener.tell(msg, getSelf());
-                } else if (msg instanceof MarketChangeMessage) {
+                                listener.tell(msg, getSelf());
+
+                            } else if (msg instanceof MarketChangeMessage) {
                                 log.info("handling market change message -> {}", msg);
 
                                 MarketChangeMessage mcm = (MarketChangeMessage) msg;
@@ -162,70 +163,6 @@ public class BetfairSocketActor extends AbstractActor {
                 .matchAny(o -> log.warning("i'm in state 'connected' and i don't know what to do with {}", o))
                 .build();
     }
-
-//    @Override
-//    public Receive createReceive() {
-//        return receiveBuilder()
-//                .match(AuthenticationMessage.class, msg -> {
-//                    restartHeartbeatTimer();
-//                    toSocket(msg);
-//                })
-//                .match(StreamProtocol.HeartbeatReceived.class, msg -> {
-//                    restartHeartbeatTimer();
-//                })
-//                .match(StreamProtocol.class, this::toSocket)
-//                .match(ByteString.class, bytes -> {
-//                    String s = bytes.utf8String();
-//                    log.info(s);
-//                    buffer.append(s);
-//
-//                    if (buffer.toString().endsWith("\r\n")) {
-//
-//                        log.info("parsing {}", buffer.toString());
-//
-//                        ResponseMessage msg = null;
-//
-//                        try {
-//                            msg = mapper.readValue(buffer.toString(), ResponseMessage.class);
-//                        } catch (IOException e) {
-//                            log.error("problem reading json value -> {} -> {}", buffer.toString(), e);
-//                        }
-//
-//                        buffer = new StringBuilder();
-//
-//                        if (msg != null) {
-//                /*if (msg instanceof StatusMessage) {
-//                    log.info("Handling status message {}", msg);
-//
-//                    if (msg.getId() != null) {
-//                        if (msg.getId().equals(1)) {
-//                            log.info("stream succesfully authenticated");
-//
-//                            unstashAll();
-//                            getContext().become(loggedIn());
-//                        } else if (msg.getId().equals(2)) {
-//                            stream.tell(new StreamProtocol.HeartbeatReceived(), getSelf());
-//                        }
-//                    }
-//                } else */if (msg instanceof MarketChangeMessage) {
-//                                log.info("handling market change message -> {}", msg);
-//
-//                                MarketChangeMessage mcm = (MarketChangeMessage) msg;
-//
-//                                if (mcm.getCt() == MarketChangeMessage.CtEnum.HEARTBEAT) {
-//                                    restartHeartbeatTimer();
-//                                } else if (mcm.getCt() == MarketChangeMessage.CtEnum.SUB_IMAGE) {
-//                                    streamHandler.tell(mcm, getSelf());
-//                                }
-//                            } else {
-//                                log.debug("ignoring message -> {}", msg);
-//                            }
-//                        }
-//                    }
-//                })
-//                .matchAny(o -> log.warning("i don't know what to do with {}", o))
-//                .build();
-//    }
 
     public void restartHeartbeatTimer() {
         if (timer != null) {
