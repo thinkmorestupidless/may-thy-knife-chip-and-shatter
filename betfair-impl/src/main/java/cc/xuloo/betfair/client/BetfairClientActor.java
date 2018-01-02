@@ -66,7 +66,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
                 .match(ExchangeProtocol.class, cmd -> {
                     stash();
                 })
-                .matchAny(o -> log.info("in state 'disconnected' - unable to handle {}", o))
+                .matchAny(o -> log.warning("in state 'disconnected' - unable to handle {}", o))
                 .build();
     }
 
@@ -81,7 +81,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
                 .match(ExchangeProtocol.class, cmd -> {
                     stash();
                 })
-                .matchAny(o -> log.info("in state 'connectingExchange' - unable to handle {}", o))
+                .matchAny(o -> log.warning("in state 'connectingExchange' - unable to handle {}", o))
                 .build();
     }
 
@@ -91,7 +91,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
                     getContext().become(connectingStream(session));
                     stream.tell(new StreamCommand.Connect(session, settings.getStream().getUri(), settings.getStream().getPort()), getSelf());
                 })
-                .matchAny(o -> log.info("in state 'exchangeConnected' - unable to handle {}", o))
+                .matchAny(o -> log.warning("in state 'exchangeConnected' - unable to handle {}", o))
                 .build();
     }
 
@@ -106,7 +106,7 @@ public class BetfairClientActor extends AbstractActorWithStash {
                 .match(ExchangeProtocol.class, cmd -> {
                     stash();
                 })
-                .matchAny(o -> log.info("in state 'connectingStream' - unable to handle {}", o))
+                .matchAny(o -> log.warning("in state 'connectingStream' - unable to handle {}", o))
                 .build();
     }
 

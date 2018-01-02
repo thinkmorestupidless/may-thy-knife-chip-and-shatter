@@ -54,14 +54,14 @@ public class SocketActor extends AbstractActor {
     private Receive connected(final ActorRef connection, final ActorRef listener) {
         return receiveBuilder()
                 .match(ByteString.class, msg -> {
-                    log.info("sending message -> {}", msg);
+                    log.debug("sending message -> {}", msg);
                     connection.tell(TcpMessage.write((ByteString) msg), getSelf());
                 })
                 .match(Tcp.CommandFailed.class, msg -> {
                     // OS kernel socket buffer was full
                 })
                 .match(Tcp.Received.class, msg -> {
-                    log.info("received -> {} -> {}", msg.data(), listener);
+                    log.debug("received -> {} -> {}", msg.data(), listener);
                     listener.tell(msg.data(), getSelf());
                 })
                 .matchEquals("close", msg -> {

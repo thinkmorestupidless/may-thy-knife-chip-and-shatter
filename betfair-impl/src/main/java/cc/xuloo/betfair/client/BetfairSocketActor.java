@@ -72,7 +72,6 @@ public class BetfairSocketActor extends AbstractActor {
     public Receive disconnected() {
         return receiveBuilder()
                 .match(ConnectMessage.class, msg -> {
-                    log.info("forwarding -> {} to {}", msg, socket);
                     getContext().become(connecting(getSender()));
                     socket.tell(msg, getSelf());
                 })
@@ -83,12 +82,12 @@ public class BetfairSocketActor extends AbstractActor {
     public Receive connecting(ActorRef listener) {
         return receiveBuilder()
                 .match(Tcp.Connected.class, msg -> {
-                    log.info("TCP socket connection established to {}", msg.remoteAddress());
+                    log.debug("TCP socket connection established to {}", msg.remoteAddress());
                 })
                 .match(ByteString.class, msg -> {
                     ConnectionMessage cm = mapper.readValue(msg.utf8String(), ConnectionMessage.class);
 
-                    log.info("connection to betfair established");
+                    log.debug("connection to betfair established");
 
                     getContext().become(connected(listener));
                     listener.tell(cm, getSelf());
@@ -116,7 +115,7 @@ public class BetfairSocketActor extends AbstractActor {
 
                     if (buffer.toString().endsWith("\r\n")) {
 
-                        log.info("parsing {}", buffer.toString());
+                        log.debug("parsing {}", buffer.toString());
 
                         ResponseMessage msg = null;
 
@@ -126,15 +125,13 @@ public class BetfairSocketActor extends AbstractActor {
                             log.error("problem reading json value -> {} -> {}", buffer.toString(), e);
                         }
 
-                        buffer = new StringBuilder();
-
                         if (msg != null) {
                             if (msg instanceof StatusMessage) {
-                                log.info("Handling status message {}", msg);
+                                log.debug("Handling status message {}", msg);
 
                                 if (msg.getId() != null) {
                                     if (msg.getId().equals(1)) {
-                                        log.info("stream succesfully authenticated");
+                                        log.debug("stream succesfully authenticated");
 
                                         listener.tell(msg, getSelf());
                                     } else if (msg.getId().equals(2)) {
@@ -145,7 +142,8 @@ public class BetfairSocketActor extends AbstractActor {
                                 listener.tell(msg, getSelf());
 
                             } else if (msg instanceof MarketChangeMessage) {
-                                log.info("handling market change message -> {}", msg);
+                                log.info(buffer.toString());
+                                log.debug("handling market change message -> {}", msg);
 
                                 MarketChangeMessage mcm = (MarketChangeMessage) msg;
 
@@ -158,6 +156,8 @@ public class BetfairSocketActor extends AbstractActor {
                                 log.debug("ignoring message -> {}", msg);
                             }
                         }
+
+                        buffer = new StringBuilder();
                     }
                 })
                 .matchAny(o -> log.warning("i'm in state 'connected' and i don't know what to do with {}", o))
@@ -180,7 +180,7 @@ public class BetfairSocketActor extends AbstractActor {
     }
 
     public void toSocket(StreamProtocol msg) {
-        log.info("sending message {}", msg);
+        log.debug("sending message {}", msg);
 
         ByteString bs = wrap(() -> ByteString.fromString(mapper.writeValueAsString(msg) + CRLF));
         socket.tell(bs, getSelf());

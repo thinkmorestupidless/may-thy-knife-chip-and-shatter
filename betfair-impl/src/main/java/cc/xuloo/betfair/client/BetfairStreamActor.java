@@ -81,7 +81,6 @@ public class BetfairStreamActor extends AbstractActor {
     public Receive authorised() {
         return receiveBuilder()
                 .match(RequestMessage.class, msg -> {
-                    log.info("sending -> {} to {}", msg, socket);
                     socket.forward(msg, getContext());
                 })
                 .matchAny(o -> log.warning("i'm in state 'authorised' and i don't know what to do with {}", o))
