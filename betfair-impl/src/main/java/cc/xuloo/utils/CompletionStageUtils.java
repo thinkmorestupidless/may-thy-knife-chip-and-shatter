@@ -28,11 +28,11 @@ public class CompletionStageUtils {
         };
     }
 
-//    public static CompletionStage<Done> doAll(CompletionStage<?>... stages) {
-//        return doAll(Arrays.asList(stages));
-//    }
+    public static CompletionStage<Done> doAll(CompletionStage<?>... stages) {
+        return doAll(Arrays.asList(stages));
+    }
 
-    public static CompletionStage<Done> doAll(List<CompletionStage<Done>> stages) {
+    public static CompletionStage<Done> doAll(List<CompletionStage<?>> stages) {
         CompletionStage<Done> result = CompletableFuture.completedFuture(Done.getInstance());
         for (CompletionStage<?> stage : stages) {
             result = result.thenCombine(stage, (d1, d2) -> Done.getInstance());

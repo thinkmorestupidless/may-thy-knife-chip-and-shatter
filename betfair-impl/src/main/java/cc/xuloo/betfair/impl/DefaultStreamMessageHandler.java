@@ -38,15 +38,15 @@ public class DefaultStreamMessageHandler extends AbstractActor {
                             PersistentEntityRef<BetfairCommand> entity = registry.refFor(BetfairEntity.class, marketChange.getMarketDefinition().getEventId());
 
                             if (marketChange.getImg() != null && marketChange.getImg()) {
-                                log.info("Adding market data for {}", marketChange.getId());
+                                log.debug("Adding market data for {}", marketChange.getId());
 
                                 entity.ask(new BetfairCommand.AddMarketData(marketChange))
-                                .thenAccept(done -> log.info("market data added"));
+                                .thenAccept(done -> log.debug("market data added"));
                             } else {
                                 log.info("Merging market data for {}", marketChange.getId());
 
                                 entity.ask(new BetfairCommand.MergeMarketData(marketChange))
-                                .thenAccept(done -> log.info("market data merged"));
+                                .thenAccept(done -> log.debug("market data merged"));
                             }
                         });
                     }
