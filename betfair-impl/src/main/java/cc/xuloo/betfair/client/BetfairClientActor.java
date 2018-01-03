@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class BetfairClientActor extends AbstractActorWithStash {
 
-    public static Props props(ObjectMapper mapper, BetfairSettings settings, ActorRef exchange, ActorRef stream, ActorRef listener) {
+    public static Props props(ObjectMapper mapper, BetfairSettings settings, ActorRef exchange, ActorRef stream) {
         return Props.create(BetfairClientActor.class, () -> new BetfairClientActor(mapper, settings, exchange, stream));
     }
 

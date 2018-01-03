@@ -47,17 +47,6 @@ public class BetfairSocketActor extends AbstractActor {
     }
 
     @Override
-    public void preStart() throws Exception {
-
-//        Materializer mat = ActorMaterializer.create(getContext());
-//        Source<RequestMessage, SourceQueueWithComplete<RequestMessage>> source = Source.queue(1000, OverflowStrategy.backpressure());
-//        Flow<RequestMessage, ByteString, NotUsed> flow = Flow.of(RequestMessage.class).map(msg -> Unchecked.wrap(() -> ByteString.fromString(mapper.writeValueAsString(msg) + CRLF)));
-//        Sink<ByteString, NotUsed> sink = Sink.actorRefWithAck(socket, SocketWrapper.Init.class, SocketWrapper.Ack.class, SocketWrapper.Complete.class, t -> t);
-//
-//        stream = source.via(flow).to(sink).run(mat);
-    }
-
-    @Override
     public void postStop() throws Exception {
         if (timer != null) {
             timer.cancel();
