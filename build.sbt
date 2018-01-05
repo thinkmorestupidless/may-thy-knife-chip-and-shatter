@@ -11,66 +11,47 @@ scalaVersion in ThisBuild := "2.11.8"
 EclipseKeys.projectFlavor in Global := EclipseProjectFlavor.Java
 
 lazy val `may-thy-knife-chip-and-shatter` = (project in file("."))
-  .aggregate(`betfair-api`, `betfair-impl`,
-             `fixture-api`, `fixture-impl`)
+  .aggregate(`utils`, `betfair-akka`,
+             `prices-api`, `prices-impl`,
+             `statscentre-api`, `statscentre-impl`)
 
-/*lazy val `betfair-models` = (project in file("betfair-models"))
+lazy val utils = (project in file("utils"))
+  .settings(commonSettings: _*)
   .settings(
-    scalacOptions in Compile ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
-    javacOptions in Compile ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
     javacOptions in doc in Compile := Seq("-Xdoclint:none"),
     // disable parallel tests
     parallelExecution in Test := false,
     licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0"))),
     libraryDependencies ++= Seq(
+      akkaActor
+    )
+  )
+
+lazy val `betfair-akka` = (project in file("betfair-akka"))
+  .settings(commonSettings: _*)
+  .settings(
+    javacOptions in doc in Compile := Seq("-Xdoclint:none"),
+    // disable parallel tests
+    parallelExecution in Test := false,
+    licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0"))),
+    libraryDependencies ++= Seq(
+      akkaActor,
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.7.5",
       "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.9.2",
-      "org.projectlombok" % "lombok" % "1.16.10",
-      "joda-time" % "joda-time" % "2.9.3" % "compile",
+      slf4j,
+      lombok,
+      strata,
+      joda,
+      jacksonJoda,
+      asynchttpclient,
       "junit" % "junit" % "4.12" % "test",
+      assertJ,
       "com.novocode" % "junit-interface" % "0.10" % "test"
     )
   )
 
-lazy val `betfair-client` = (project in file("betfair-client"))
-  .settings(
-    scalacOptions in Compile ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
-    javacOptions in Compile ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
-    javacOptions in doc in Compile := Seq("-Xdoclint:none"),
-    // disable parallel tests
-    parallelExecution in Test := false,
-    licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0"))),
-    libraryDependencies ++= Seq(
-      "org.slf4j" % "slf4j-simple" % "1.7.25",
-      "com.opengamma.strata" % "strata-collect" % "1.4.2",
-      "com.google.guava" % "guava" % "23.6-jre",
-      "com.typesafe" % "config" % "1.3.2",
-      "com.typesafe.akka" %% "akka-stream" % "2.5.8",
-      //"com.google.inject" % "guice" % "4.1.0",
-      "junit" % "junit" % "4.12" % "test",
-      "com.novocode" % "junit-interface" % "0.10" % "test"
-    )
-  )
-  .dependsOn(`betfair-models`)
-
-lazy val `betfair-client-async-http` = (project in file("betfair-client-async-http"))
-  .settings(
-    scalacOptions in Compile ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
-    javacOptions in Compile ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
-    javacOptions in doc in Compile := Seq("-Xdoclint:none"),
-    // disable parallel tests
-    parallelExecution in Test := false,
-    licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0"))),
-    libraryDependencies ++= Seq(
-      "org.asynchttpclient" % "async-http-client" % "2.0.37",
-      "junit" % "junit" % "4.12" % "test",
-      "com.novocode" % "junit-interface" % "0.10" % "test"
-    )
-  )
-  .dependsOn(`betfair-client`)*/
-
-lazy val `betfair-api` = (project in file("betfair-api"))
-  .settings(common: _*)
+lazy val `prices-api` = (project in file("prices-api"))
+  .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
       lagomJavadslApi,
@@ -78,9 +59,9 @@ lazy val `betfair-api` = (project in file("betfair-api"))
     )
   )
 
-lazy val `betfair-impl` = (project in file("betfair-impl"))
+lazy val `prices-impl` = (project in file("prices-impl"))
   .enablePlugins(LagomJava)
-  .settings(common: _*)
+  .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
       lagomJavadslPersistenceCassandra,
@@ -88,19 +69,14 @@ lazy val `betfair-impl` = (project in file("betfair-impl"))
       lagomJavadslTestKit,
       lagomJavadslPubSub,
       lombok,
-      strata,
-      joda,
-      jacksonJoda,
-      asynchttpclient,
-      scalajava8compat,
       assertJ
     )
   )
   .settings(lagomForkedTestSettings: _*)
-  .dependsOn(`betfair-api`)
+  .dependsOn(utils, `betfair-akka`, `prices-api`)
 
-lazy val `fixture-api` = (project in file("fixture-api"))
-  .settings(common: _*)
+lazy val `statscentre-api` = (project in file("statscentre-api"))
+  .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
       lagomJavadslApi,
@@ -108,9 +84,9 @@ lazy val `fixture-api` = (project in file("fixture-api"))
     )
   )
 
-lazy val `fixture-impl` = (project in file("fixture-impl"))
+lazy val `statscentre-impl` = (project in file("statscentre-impl"))
   .enablePlugins(LagomJava)
-  .settings(common: _*)
+  .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
       lagomJavadslPersistenceCassandra,
@@ -122,8 +98,10 @@ lazy val `fixture-impl` = (project in file("fixture-impl"))
     )
   )
   .settings(lagomForkedTestSettings: _*)
-  .dependsOn(`fixture-api`)
+  .dependsOn(`statscentre-api`)
 
+val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.5.8"
+val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
 val lombok = "org.projectlombok" % "lombok" % "1.16.10"
 val assertJ = "org.assertj" % "assertj-core" % "3.8.0"
 val faker = "com.github.javafaker" % "javafaker" % "0.13"
@@ -133,8 +111,9 @@ val jacksonJoda = "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "
 val asynchttpclient = "org.asynchttpclient" % "async-http-client" % "2.0.37"
 val scalajava8compat = "org.scala-lang.modules" %% "scala-java8-compat" % "0.5.0"
 
-def common = Seq(
-  javacOptions in compile += "-parameters"
+def commonSettings: Seq[Setting[_]] = eclipseSettings ++ Seq(
+  javacOptions in Compile ++= Seq("-encoding", "UTF-8", "-source", "1.8"),
+  javacOptions in(Compile, compile) ++= Seq("-Xlint:unchecked", "-Xlint:deprecation", "-parameters")
 )
 
 lagomCassandraCleanOnStart in ThisBuild := false

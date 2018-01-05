@@ -7,7 +7,6 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.io.Tcp;
-import akka.stream.javadsl.SourceQueue;
 import akka.util.ByteString;
 import cc.xuloo.betfair.client.stream.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,8 +32,6 @@ public class BetfairSocketActor extends AbstractActor {
     private final ObjectMapper mapper;
 
     private final ActorRef streamHandler;
-
-    private SourceQueue<RequestMessage> stream;
 
     private Cancellable timer;
 
