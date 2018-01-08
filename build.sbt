@@ -93,12 +93,13 @@ lazy val `statscentre-impl` = (project in file("statscentre-impl"))
       lagomJavadslKafkaBroker,
       lagomJavadslTestKit,
       lombok,
+      xstream,
       assertJ,
       faker
     )
   )
   .settings(lagomForkedTestSettings: _*)
-  .dependsOn(`statscentre-api`)
+  .dependsOn(utils, `statscentre-api`)
 
 val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.5.8"
 val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
@@ -109,7 +110,7 @@ val strata = "com.opengamma.strata" % "strata-collect" % "1.4.2"
 val joda = "joda-time" % "joda-time" % "2.9.3"
 val jacksonJoda = "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.9.2"
 val asynchttpclient = "org.asynchttpclient" % "async-http-client" % "2.0.37"
-val scalajava8compat = "org.scala-lang.modules" %% "scala-java8-compat" % "0.5.0"
+val xstream = "com.thoughtworks.xstream" % "xstream" % "1.4.9"
 
 def commonSettings: Seq[Setting[_]] = eclipseSettings ++ Seq(
   javacOptions in Compile ++= Seq("-encoding", "UTF-8", "-source", "1.8"),
