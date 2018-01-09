@@ -36,8 +36,9 @@ public class Betfair {
 
             InetSocketAddress address = InetSocketAddress.createUnresolved(config.getSettings().getStream().getUri(), config.getSettings().getStream().getPort());
             ActorRef socket = system.actorOf(SocketActor.props(), "socket-actor");
+            ActorRef bfSocket = system.actorOf(BetfairSocketActor.props(socket, mapper, streamMessageHandler(config)), "betfair-socket");
 
-            return system.actorOf(BetfairSocketActor.props(socket, mapper, streamMessageHandler(config)), "betfair-socket");
+            return system.actorOf(BetfairStreamActor.props(mapper, bfSocket), "betfair-stream");
         }
 
         return config.getSystem().actorOf(EmptyStreamActor.props(), "empty-betfair-stream");
