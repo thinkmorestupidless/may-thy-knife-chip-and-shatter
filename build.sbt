@@ -11,44 +11,9 @@ scalaVersion in ThisBuild := "2.11.8"
 EclipseKeys.projectFlavor in Global := EclipseProjectFlavor.Java
 
 lazy val `may-thy-knife-chip-and-shatter` = (project in file("."))
-  .aggregate(`utils`, `betfair-akka`,
-             `prices-api`, `prices-impl`,
-             `statscentre-api`, `statscentre-impl`)
-
-lazy val utils = (project in file("utils"))
-  .settings(commonSettings: _*)
-  .settings(
-    javacOptions in doc in Compile := Seq("-Xdoclint:none"),
-    // disable parallel tests
-    parallelExecution in Test := false,
-    licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0"))),
-    libraryDependencies ++= Seq(
-      akkaActor
-    )
-  )
-
-lazy val `betfair-akka` = (project in file("betfair-akka"))
-  .settings(commonSettings: _*)
-  .settings(
-    javacOptions in doc in Compile := Seq("-Xdoclint:none"),
-    // disable parallel tests
-    parallelExecution in Test := false,
-    licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0"))),
-    libraryDependencies ++= Seq(
-      akkaActor,
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.7.5",
-      "com.fasterxml.jackson.datatype" % "jackson-datatype-joda" % "2.9.2",
-      slf4j,
-      lombok,
-      strata,
-      joda,
-      jacksonJoda,
-      asynchttpclient,
-      "junit" % "junit" % "4.12" % "test",
-      assertJ,
-      "com.novocode" % "junit-interface" % "0.10" % "test"
-    )
-  )
+  .aggregate(`prices-api`, `prices-impl`,
+             `statscentre-api`, `statscentre-impl`,
+             `fixtures-api`, `fixtures-impl`)
 
 lazy val `prices-api` = (project in file("prices-api"))
   .settings(commonSettings: _*)
@@ -69,11 +34,14 @@ lazy val `prices-impl` = (project in file("prices-impl"))
       lagomJavadslTestKit,
       lagomJavadslPubSub,
       lombok,
+      strata,
+      asynchttpclient,
+      jacksonJoda,
       assertJ
     )
   )
   .settings(lagomForkedTestSettings: _*)
-  .dependsOn(utils, `betfair-akka`, `prices-api`)
+  .dependsOn(`prices-api`)
 
 lazy val `statscentre-api` = (project in file("statscentre-api"))
   .settings(commonSettings: _*)
@@ -99,9 +67,30 @@ lazy val `statscentre-impl` = (project in file("statscentre-impl"))
     )
   )
   .settings(lagomForkedTestSettings: _*)
-  .dependsOn(utils, `statscentre-api`)
+  .dependsOn(`statscentre-api`)
 
-val akkaActor = "com.typesafe.akka" %% "akka-actor" % "2.5.8"
+lazy val `fixtures-api` = (project in file("fixtures-api"))
+  .settings(commonSettings: _*)
+  .settings(
+    libraryDependencies ++= Seq(
+      lagomJavadslApi,
+      lombok
+    )
+  )
+
+lazy val `fixtures-impl` = (project in file("fixtures-impl"))
+  .enablePlugins(LagomJava)
+  .settings(commonSettings: _*)
+  .settings(
+    libraryDependencies ++= Seq(
+      lagomJavadslPersistenceCassandra,
+      lagomJavadslKafkaBroker,
+      lagomJavadslTestKit
+    )
+  )
+  .settings(lagomForkedTestSettings: _*)
+  .dependsOn(`fixtures-api`)
+
 val slf4j = "org.slf4j" % "slf4j-api" % "1.7.25"
 val lombok = "org.projectlombok" % "lombok" % "1.16.10"
 val assertJ = "org.assertj" % "assertj-core" % "3.8.0"
