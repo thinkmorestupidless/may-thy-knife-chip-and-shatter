@@ -1,4 +1,4 @@
-package cc.xuloo.betfair.impl;
+package cc.xuloo.prices;
 
 import akka.Done;
 import cc.xuloo.betfair.client.exchange.entities.Event;
@@ -10,11 +10,11 @@ import com.lightbend.lagom.javadsl.persistence.PersistentEntity;
 import com.lightbend.lagom.serialization.Jsonable;
 import lombok.Value;
 
-public interface BetfairCommand extends Jsonable {
+public interface PricesCommand extends Jsonable {
 
     @Value
     @JsonDeserialize
-    class AddFixture implements BetfairCommand, PersistentEntity.ReplyType<Done> {
+    class AddFixture implements PricesCommand, PersistentEntity.ReplyType<Done> {
 
         private final Event event;
 
@@ -26,7 +26,7 @@ public interface BetfairCommand extends Jsonable {
 
     @Value
     @JsonDeserialize
-    class AddMarketCatalogue implements BetfairCommand, PersistentEntity.ReplyType<Done> {
+    class AddMarketCatalogue implements PricesCommand, PersistentEntity.ReplyType<Done> {
 
         private final MarketCatalogue catalogue;
 
@@ -38,7 +38,7 @@ public interface BetfairCommand extends Jsonable {
 
     @Value
     @JsonDeserialize
-    class AddMarketData implements BetfairCommand, PersistentEntity.ReplyType<Done> {
+    class AddMarketData implements PricesCommand, PersistentEntity.ReplyType<Done> {
 
         private final MarketChange data;
 
@@ -50,7 +50,7 @@ public interface BetfairCommand extends Jsonable {
 
     @Value
     @JsonDeserialize
-    class MergeMarketData implements BetfairCommand, PersistentEntity.ReplyType<Done> {
+    class MergeMarketData implements PricesCommand, PersistentEntity.ReplyType<Done> {
 
         private final MarketChange data;
 

@@ -1,4 +1,4 @@
-package cc.xuloo.betfair.impl;
+package cc.xuloo.prices;
 
 import cc.xuloo.betfair.client.exchange.entities.Event;
 import cc.xuloo.betfair.client.exchange.entities.MarketCatalogue;
@@ -16,10 +16,10 @@ import java.util.Set;
 
 @Value
 @JsonDeserialize
-public class BetfairState implements CompressedJsonable {
+public class PricesState implements CompressedJsonable {
 
-    public static BetfairState empty() {
-        return new BetfairState(new Event("", "", "", "", "", new Date(0)), Collections.emptySet());
+    public static PricesState empty() {
+        return new PricesState(new Event("", "", "", "", "", new Date(0)), Collections.emptySet());
     }
 
     private final Event event;
@@ -27,23 +27,23 @@ public class BetfairState implements CompressedJsonable {
     private final Set<MarketState> markets;
 
     @JsonCreator
-    public BetfairState(Event event, Set<MarketState> markets) {
+    public PricesState(Event event, Set<MarketState> markets) {
         this.event = event;
         this.markets = markets;
     }
 
-    public BetfairState withEvent(Event event) {
-        return new BetfairState(event, markets);
+    public PricesState withEvent(Event event) {
+        return new PricesState(event, markets);
     }
 
-    public BetfairState withMarketCatalogue(MarketCatalogue catalogue) {
+    public PricesState withMarketCatalogue(MarketCatalogue catalogue) {
         Set<MarketState> markets = new HashSet<>(this.markets);
         Collections.addAll(markets, MarketState.from(catalogue));
 
-        return new BetfairState(event, markets);
+        return new PricesState(event, markets);
     }
 
-    public BetfairState withMarketData(MarketChange data) {
+    public PricesState withMarketData(MarketChange data) {
         Set<MarketState> markets = Sets.newHashSet();
 
         for (MarketState state : this.markets) {
@@ -54,10 +54,10 @@ public class BetfairState implements CompressedJsonable {
             }
         }
 
-        return new BetfairState(event, markets);
+        return new PricesState(event, markets);
     }
 
-    public BetfairState withMergedMarketData(MarketChange data) {
+    public PricesState withMergedMarketData(MarketChange data) {
         Set<MarketState> markets = Sets.newHashSet();
 
         for (MarketState state : this.markets) {
@@ -68,6 +68,6 @@ public class BetfairState implements CompressedJsonable {
             }
         }
 
-        return new BetfairState(event, markets);
+        return new PricesState(event, markets);
     }
 }

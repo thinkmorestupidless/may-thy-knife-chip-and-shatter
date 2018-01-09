@@ -1,4 +1,4 @@
-package cc.xuloo.betfair.impl;
+package cc.xuloo.prices.betfair;
 
 import akka.Done;
 import akka.actor.AbstractActor;
@@ -13,6 +13,8 @@ import cc.xuloo.betfair.client.exchange.entities.MarketFilter;
 import cc.xuloo.betfair.client.exchange.enums.MarketProjection;
 import cc.xuloo.betfair.client.exchange.enums.MarketSort;
 import cc.xuloo.betfair.client.ExchangeProtocol;
+import cc.xuloo.prices.PricesCommand;
+import cc.xuloo.prices.PricesEntity;
 import cc.xuloo.utils.CompletionStageUtils;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import org.assertj.core.util.Lists;
@@ -44,7 +46,7 @@ public class EventMonitor extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(BetfairServiceProtocol.MonitorEvent.class, this::monitorEvent)
+                .match(PricesServiceProtocol.MonitorEvent.class, this::monitorEvent)
                 .build();
     }
 
@@ -74,21 +76,21 @@ public class EventMonitor extends AbstractActor {
                                     log.warning("failed to complete all markets -> {}", throwable);
                                     return Done.getInstance();
                                 }).thenAccept(done -> {
-                                    listener.tell(new BetfairServiceProtocol.EventMonitored(catalogues), getSelf());
+                                    listener.tell(new PricesServiceProtocol.EventMonitored(catalogues), getSelf());
                                 });
                     }
                 })
                 .build();
     }
 
-    public void monitorEvent(BetfairServiceProtocol.MonitorEvent cmd) {
+    public void monitorEvent(PricesServiceProtocol.MonitorEvent cmd) {
         log.info("monitoring event -> {}", getSender());
 
         listener = getSender();
         Event event = cmd.getEvent();
 
-        registry.refFor(BetfairEntity.class, event.getId())
-                .ask(new BetfairCommand.AddFixture(event))
+        registry.refFor(PricesEntity.class, event.getId())
+                .ask(new PricesCommand.AddFixture(event))
                 .thenAccept(done -> {
                     MarketFilter filter = MarketFilter.builder()
                             .eventId(cmd.getEvent().getId())
@@ -108,7 +110,7 @@ public class EventMonitor extends AbstractActor {
     }
 
     public CompletionStage<Done> subscribeToMarket(MarketCatalogue catalogue, String eventId) {
-        return registry.refFor(BetfairEntity.class, eventId)
-                       .ask(new BetfairCommand.AddMarketCatalogue(catalogue));
+        return registry.refFor(PricesEntity.class, eventId)
+                       .ask(new PricesCommand.AddMarketCatalogue(catalogue));
     }
 }

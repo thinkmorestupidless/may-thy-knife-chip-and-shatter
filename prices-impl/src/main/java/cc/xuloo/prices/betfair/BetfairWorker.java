@@ -1,4 +1,4 @@
-package cc.xuloo.betfair.impl;
+package cc.xuloo.prices.betfair;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -49,7 +49,7 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(BetfairServiceProtocol.Start.class, this::start)
+                .match(PricesServiceProtocol.Start.class, this::start)
                 .match(EventResultContainer.class, this::handleEventResultContainer)
                 .matchAny(o -> log.info("i don't know what to do with {}", o))
                 .build();
@@ -57,11 +57,11 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
 
     public Receive handlingMonitoredEvent() {
         return receiveBuilder()
-                .match(BetfairServiceProtocol.EventMonitored.class, this::handleEventMonitored)
+                .match(PricesServiceProtocol.EventMonitored.class, this::handleEventMonitored)
                 .build();
     }
 
-    private void start(BetfairServiceProtocol.Start cmd) {
+    private void start(PricesServiceProtocol.Start cmd) {
         log.debug("starting betfair worker");
 
         MarketFilter filter = MarketFilter.builder()
@@ -91,11 +91,11 @@ public class BetfairWorker extends AbstractActor implements InjectedActorSupport
             log.info("monitoring markets for {} events", target);
 
             result.forEach(eventResult ->
-                router.tell(new BetfairServiceProtocol.MonitorEvent(eventResult.getEvent()), getSelf()));
+                router.tell(new PricesServiceProtocol.MonitorEvent(eventResult.getEvent()), getSelf()));
         }
     }
 
-    private void handleEventMonitored(BetfairServiceProtocol.EventMonitored msg) {
+    private void handleEventMonitored(PricesServiceProtocol.EventMonitored msg) {
         marketIds.addAll(msg.getCatalogues().stream().map(catalogue -> catalogue.getMarketId()).collect(Collectors.toSet()));
         target--;
 

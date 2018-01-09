@@ -1,4 +1,4 @@
-package cc.xuloo.betfair.impl;
+package cc.xuloo.prices;
 
 import cc.xuloo.betfair.client.exchange.entities.MarketCatalogue;
 import cc.xuloo.betfair.client.stream.MarketChange;

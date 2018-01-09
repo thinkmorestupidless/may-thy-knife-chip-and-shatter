@@ -1,4 +1,4 @@
-package cc.xuloo.betfair.impl;
+package cc.xuloo.prices.betfair;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -16,6 +16,6 @@ public class BetfairMonitor {
     @Inject
     public BetfairMonitor(ActorSystem system, Config config, @Named("betfair-client") ActorRef betfair, PersistentEntityRegistry registry) {
         ActorRef worker = system.actorOf(BetfairWorker.props(config, betfair, registry), "betfair-worker");
-        worker.tell(new BetfairServiceProtocol.Start(), ActorRef.noSender());
+        worker.tell(new PricesServiceProtocol.Start(), ActorRef.noSender());
     }
 }

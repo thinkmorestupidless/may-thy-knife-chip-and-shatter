@@ -1,4 +1,4 @@
-package cc.xuloo.betfair.impl;
+package cc.xuloo.prices.betfair;
 
 import cc.xuloo.betfair.client.exchange.entities.Event;
 import cc.xuloo.betfair.client.exchange.entities.MarketCatalogue;
@@ -7,7 +7,7 @@ import lombok.Value;
 
 import java.util.List;
 
-public interface BetfairServiceProtocol {
+public interface PricesServiceProtocol {
 
     class Start {}
 

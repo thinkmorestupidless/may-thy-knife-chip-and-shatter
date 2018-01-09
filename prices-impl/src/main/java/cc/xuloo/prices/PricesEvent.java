@@ -1,4 +1,4 @@
-package cc.xuloo.betfair.impl;
+package cc.xuloo.prices;
 
 import cc.xuloo.betfair.client.exchange.entities.Event;
 import cc.xuloo.betfair.client.exchange.entities.MarketCatalogue;
@@ -12,13 +12,13 @@ import com.lightbend.lagom.javadsl.persistence.AggregateEventTagger;
 import com.lightbend.lagom.serialization.Jsonable;
 import lombok.Value;
 
-public interface BetfairEvent extends Jsonable, AggregateEvent<BetfairEvent> {
+public interface PricesEvent extends Jsonable, AggregateEvent<PricesEvent> {
 
-    AggregateEventShards<BetfairEvent> TAG = AggregateEventTag.sharded(BetfairEvent.class, 4);
+    AggregateEventShards<PricesEvent> TAG = AggregateEventTag.sharded(PricesEvent.class, 4);
 
     @Value
     @JsonDeserialize
-    class FixtureAdded implements BetfairEvent {
+    class FixtureAdded implements PricesEvent {
 
         private final Event event;
 
@@ -30,7 +30,7 @@ public interface BetfairEvent extends Jsonable, AggregateEvent<BetfairEvent> {
 
     @Value
     @JsonDeserialize
-    class MarketCatalogueAdded implements BetfairEvent {
+    class MarketCatalogueAdded implements PricesEvent {
 
         private final MarketCatalogue catalogue;
 
@@ -42,7 +42,7 @@ public interface BetfairEvent extends Jsonable, AggregateEvent<BetfairEvent> {
 
     @Value
     @JsonDeserialize
-    class MarketDataAdded implements BetfairEvent {
+    class MarketDataAdded implements PricesEvent {
 
         private final MarketChange data;
 
@@ -54,7 +54,7 @@ public interface BetfairEvent extends Jsonable, AggregateEvent<BetfairEvent> {
 
     @Value
     @JsonDeserialize
-    class MarketDataMerged implements BetfairEvent {
+    class MarketDataMerged implements PricesEvent {
 
         private final MarketChange data;
 
@@ -65,7 +65,7 @@ public interface BetfairEvent extends Jsonable, AggregateEvent<BetfairEvent> {
     }
 
     @Override
-    default AggregateEventTagger<BetfairEvent> aggregateTag() {
+    default AggregateEventTagger<PricesEvent> aggregateTag() {
         return TAG;
     }
 }
